@@ -148,7 +148,9 @@
         "symbol": "^CNX100",
         "name": "NIFTY 100",
         "category": "Large Cap",
-        "minPoints": 250
+        "minPoints": 250,
+        "indexHistory": "Nifty 100",
+        "indexName": "NIFTY 100"
       },
       {
         "symbol": "MID150BEES.NS",
@@ -164,7 +166,9 @@
             "name": "NIFTY Midcap 50"
           }
         ],
-        "minPoints": 250
+        "minPoints": 250,
+        "indexHistory": "Nifty Midcap 150",
+        "indexName": "NIFTY Midcap 150"
       },
       {
         "symbol": "HDFCSML250.NS",
@@ -180,7 +184,9 @@
             "name": "NIFTY Smallcap 100"
           }
         ],
-        "minPoints": 250
+        "minPoints": 250,
+        "indexHistory": "Nifty Smallcap 250",
+        "indexName": "NIFTY Smallcap 250"
       }
     ]
   }

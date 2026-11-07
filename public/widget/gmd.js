@@ -17,8 +17,13 @@
   var TRACK_ROWS = 10;      // table मध्ये किती ओळी
 
   // पानाचा HTML ढाचा (बाहेरचा डेटा यात नाही — म्हणून innerHTML सुरक्षित)
-  var MARKUP = `<h2 id="gmd-title">Global Markets</h2>
+  var MARKUP = `<div class="gmd__print-head">Global Markets Snapshot</div>
+  <div class="gmd__top">
+    <h2 id="gmd-title">Global Markets</h2>
+    <button type="button" class="gmd__print" id="gmd-print">Print / Save PDF</button>
+  </div>
   <div class="gmd__meta" id="gmd-updated">Loading market data…</div>
+  <div class="gmd__closed" id="gmd-closed" hidden></div>
   <div class="gmd__banner" id="gmd-stale" hidden></div>
 
   <!-- Public disclaimer (footer शी जुळणारं नाव व ARN) -->
@@ -49,6 +54,11 @@
     </div>
   </div>
 
+  <div class="gmd__card" id="gmd-summary-card" hidden>
+    <h3>What Moved</h3>
+    <ul class="gmd__summary" id="gmd-summary"></ul>
+  </div>
+
   <div class="gmd__card">
     <h3>World Markets — Today</h3>
     <div id="gmd-heatmap"></div>
@@ -73,8 +83,8 @@
     <div id="gmd-rotation"></div>
   </div>
 
-  <!-- PUBLIC: plain sector table -->
-  <div class="gmd__card" data-mode="public">
+  <!-- PUBLIC: plain sector table (private mode मध्ये फक्त print साठी) -->
+  <div class="gmd__card gmd__card--sectors" data-mode="public">
     <h3>Indian Sectors</h3>
     <table><thead><tr><th>Sector</th><th>Last</th><th>1D</th><th>1M</th><th>1Y</th></tr></thead>
       <tbody id="gmd-sectors"></tbody></table>
@@ -103,6 +113,12 @@
 
   <div class="gmd__cta" data-mode="public">
     <a href="https://wa.me/919405908605?text=Hi%2C%20I%20saw%20the%20Global%20Markets%20page%20on%20advisor4u.in" target="_blank" rel="noopener">Chat with Us on WhatsApp</a>
+  </div>
+
+  <div class="gmd__print-foot">
+    Sahare Wealth · AMFI-registered Mutual Fund Distributor · ARN-151469 · www.advisor4u.in<br>
+    Mutual Fund investments are subject to market risks, read all scheme related documents carefully.
+    Market data is delayed (source: Yahoo Finance) and shown for information only; not investment advice or a recommendation.
   </div>`;
   var STALE_MINUTES = 60;   // weekday ला यापेक्षा जुना डेटा → warning
   var REGION_ORDER = ['India', 'US', 'Europe', 'Asia'];
@@ -288,6 +304,45 @@
     if (!weekend && ageMin > STALE_MINUTES) msgs.push('Data is ' + ageMin + ' minutes old.');
     if (staleCount) msgs.push(staleCount + ' item(s) could not be refreshed and show older values.');
     if (msgs.length) { $('gmd-stale').textContent = msgs.join(' '); $('gmd-stale').hidden = false; }
+    renderClosed(data, weekend);
+  }
+
+  // S1: weekend / सुट्टी — "Markets closed" banner
+  function istDateString(d) {
+    return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });  // YYYY-MM-DD
+  }
+
+  function prettyDate(iso) {
+    var parts = iso.split('-');
+    var d = new Date(Date.UTC(+parts[0], +parts[1] - 1, +parts[2], 12));
+    return d.toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  function renderClosed(data, weekend) {
+    var globals = ((data.groups || {}).global || []).filter(function (g) { return g.asof; });
+    if (!globals.length) return;
+    var today = istDateString(new Date());
+    var latest = globals.map(function (g) { return g.asof; }).sort().pop();
+    var nifty = globals.filter(function (g) { return g.symbol === '^NSEI'; })[0];
+    var hourIst = +new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', hour: 'numeric', hourCycle: 'h23' });
+    var text = '';
+    if (weekend) {
+      text = 'Markets closed for the weekend — showing last close (' + prettyDate(latest) + ').';
+    } else if (latest < today && hourIst >= 10) {
+      text = 'Most markets are closed today — showing last close (' + prettyDate(latest) + ').';
+    } else if (nifty && nifty.asof < today && hourIst >= 10) {
+      text = 'Indian markets are closed today — Indian values show the last close (' + prettyDate(nifty.asof) + ').';
+    }
+    if (text) { $('gmd-closed').textContent = text; $('gmd-closed').hidden = false; }
+  }
+
+  // S2: "What moved" — build_data.py ने बनवलेली वाक्यं (फक्त घडलेल्या घटना)
+  function renderSummary(lines) {
+    if (!Array.isArray(lines) || !lines.length) return;
+    var list = $('gmd-summary');
+    list.textContent = '';
+    lines.forEach(function (t) { list.appendChild(el('li', '', String(t))); });
+    $('gmd-summary-card').hidden = false;
   }
 
   function renderHeatmap(globals) {
@@ -500,6 +555,7 @@
     root.innerHTML = MARKUP;
 
     applyMode();
+    $('gmd-print').addEventListener('click', function () { window.print(); });
     if (MODE === 'private') { renderRules(); loadCalendar(); loadTrack(); }
 
     // 5-मिनिटांचा cache-buster — CDN cache मधला खूप जुना डेटा टाळतो
@@ -520,6 +576,8 @@
         all.forEach(function (i) { map[i.symbol] = i; });
 
         renderMeta(data, all);
+        renderSummary(data.summary);
+        renderSectors(sectors);  // private mode मध्ये फक्त print साठी
         renderHeatmap(globals);
         renderRisk(risk);
         renderFunds(funds);
@@ -528,8 +586,6 @@
           renderCue(computeCue(map));
           renderMood(computeMood(map, globals));
           renderRotation(sectors);
-        } else {
-          renderSectors(sectors);
         }
       })
       .catch(function (err) {

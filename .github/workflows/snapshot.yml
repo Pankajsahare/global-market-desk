@@ -1,0 +1,47 @@
+# S5 — सोम–शुक्र ~16:11 IST ला (भारतीय बाजार बंद झाल्यावर) social snapshot PNG → private Telegram.
+name: Daily snapshot
+
+on:
+  schedule:
+    - cron: "41 10 * * 1-5"  # 10:41 UTC = 16:11 IST
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install headless browser
+        run: |
+          pip install -q playwright==1.48.0
+          python -m playwright install --with-deps chromium
+
+      - name: Download live data
+        run: |
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          NAME="${GITHUB_REPOSITORY#*/}"
+          curl -fsSL "https://${OWNER,,}.github.io/${NAME}/data/market.json?b=$(date +%s)" -o market.json
+
+      - name: Render and send
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/snapshot.py --data market.json --out snapshot.png --send
+
+      # Telegram fail झाला तरी PNG Actions मधून download करता येतो (7 दिवस)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snapshot
+          path: snapshot.png
+          retention-days: 7
+          if-no-files-found: ignore

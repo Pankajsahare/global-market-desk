@@ -113,7 +113,7 @@ class BuildDatasetTests(unittest.TestCase):
             try:
                 # build_dataset चा default fetcher import वेळी bind होतो — म्हणून थेट patch
                 original_build = build_data.build_dataset
-                build_data.build_dataset = lambda c, p: original_build(c, p, fetcher=lambda s: None, pause=0)
+                build_data.build_dataset = lambda c, p, **kw: original_build(c, p, fetcher=lambda s: None, pause=0)
                 code = build_data.main(["--config", str(cfg), "--out", str(out)])
             finally:
                 build_data.fetch_chart = original
@@ -124,3 +124,39 @@ class BuildDatasetTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class IndexProxyTests(unittest.TestCase):
+    """S6: invest-core index closes."""
+
+    def setUp(self):
+        start = date(2025, 6, 1)
+        self.series = {"Nifty Midcap 150": [((start + timedelta(days=i)).isoformat(), 100.0 + i) for i in range(400)]}
+        self.cfg = {"groups": {"funds": [{"symbol": "MID", "name": "Mid ETF", "category": "Mid Cap",
+                                          "indexHistory": "Nifty Midcap 150", "indexName": "NIFTY Midcap 150",
+                                          "minPoints": 250}]}}
+
+    def test_fresh_index_used_without_yahoo(self):
+        calls = []
+        data, success, _ = build_data.build_dataset(
+            self.cfg, {}, fetcher=lambda s: calls.append(s), pause=0,
+            index_series=self.series, today=date(2026, 7, 8))
+        item = data["groups"]["funds"][0]
+        self.assertEqual((success, calls), (1, []))
+        self.assertEqual((item["name"], item["sourceSymbol"], item["category"]),
+                         ("NIFTY Midcap 150", "invest-core:Nifty Midcap 150", "Mid Cap"))
+        self.assertIsNotNone(item["r1y"])
+
+    def test_stale_index_falls_back_to_yahoo(self):
+        calls = []
+        build_data.build_dataset(self.cfg, {}, fetcher=lambda s: calls.append(s), pause=0,
+                                 index_series=self.series, today=date(2026, 8, 30))
+        self.assertEqual(calls, ["MID"])
+
+    def test_load_index_proxies_ignores_bad_rows(self):
+        import json, tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "p.json"
+            path.write_text(json.dumps({"series": {"X": [["2026-01-02", 2.0], ["2026-01-01", 1.0], ["2026-01-03", None]]}}))
+            self.assertEqual(build_data.load_index_proxies(path), {"X": [("2026-01-01", 1.0), ("2026-01-02", 2.0)]})
+            self.assertEqual(build_data.load_index_proxies(Path(tmp) / "missing.json"), {})

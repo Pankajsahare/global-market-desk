@@ -22,6 +22,9 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from summary import build_summary  # noqa: E402  (S2)
+
 YAHOO_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=2y"
 USER_AGENT = "Mozilla/5.0 (compatible; GlobalMarketDesk/1.0; +https://www.advisor4u.in)"
 REQUEST_TIMEOUT = 15        # seconds
@@ -29,6 +32,7 @@ RETRIES = 2                 # पहिल्या प्रयत्नान�
 PAUSE_SECONDS = 0.4         # दोन requests मधला gap (rate-limit टाळण्यासाठी)
 SPARK_POINTS = 66           # sparkline साठी शेवटचे ~3 महिने
 MIN_SUCCESS_RATIO = 0.5     # यापेक्षा कमी यश → नवीन file लिहू नका
+INDEX_MAX_AGE_DAYS = 7      # invest-core index डेटा यापेक्षा जुना → Yahoo वापरा
 
 # return चे नाव → किती calendar दिवस मागे
 RETURN_WINDOWS = {"r1w": 7, "r1m": 30, "r3m": 91, "r1y": 365}
@@ -92,7 +96,12 @@ def pct_change(current: float, base: Optional[float]) -> Optional[float]:
 
 def build_item(cfg: dict[str, Any], result: dict[str, Any]) -> Optional[dict[str, Any]]:
     """Config entry + Yahoo result → dashboard item. डेटा अपुरा असल्यास None."""
-    series = parse_series(result)
+    market_time = (result.get("meta") or {}).get("regularMarketTime")
+    return item_from_series(cfg, parse_series(result), market_time)
+
+
+def item_from_series(cfg: dict[str, Any], series: Series, market_time: Any = None) -> Optional[dict[str, Any]]:
+    """[(date, close)] series → dashboard item (Yahoo किंवा invest-core दोन्हीसाठी)."""
     if len(series) < 2:
         return None
 
@@ -114,7 +123,6 @@ def build_item(cfg: dict[str, Any], result: dict[str, Any]) -> Optional[dict[str
     week_base = close_on_or_before(series, last_date - timedelta(days=7))
     item["d1w"] = round(last - week_base, decimals) if week_base is not None else None
 
-    market_time = (result.get("meta") or {}).get("regularMarketTime")
     item["asof"] = last_day
     item["marketTime"] = (
         datetime.fromtimestamp(int(market_time), tz=timezone.utc).isoformat()
@@ -147,11 +155,44 @@ def load_previous(path: Optional[Path]) -> dict[str, dict[str, Any]]:
     return previous
 
 
+def load_index_proxies(path: Optional[Path]) -> dict[str, Series]:
+    """S6: invest-core ने publish केलेले NSE index closes → {index name: [(date, close)]}."""
+    if path is None or not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+        return {}
+    out: dict[str, Series] = {}
+    for name, rows in (data.get("series") or {}).items():
+        clean = sorted((str(d), float(c)) for d, c in rows if isinstance(c, (int, float)))
+        if clean:
+            out[name] = clean
+    return out
+
+
+def index_item(cfg: dict[str, Any], index_series: dict[str, Series], today: date) -> Optional[dict[str, Any]]:
+    """Config मध्ये "indexHistory" असल्यास आणि डेटा ताजा (≤ INDEX_MAX_AGE_DAYS) असल्यास item."""
+    name = cfg.get("indexHistory")
+    series = index_series.get(name) if name else None
+    if not series or len(series) < int(cfg.get("minPoints", 2)):
+        return None
+    if (today - date.fromisoformat(series[-1][0])).days > INDEX_MAX_AGE_DAYS:
+        print(f"WARN {name}: index history is stale, using Yahoo", file=sys.stderr)
+        return None
+    item = item_from_series({**cfg, "name": cfg.get("indexName", name)}, series)
+    if item is not None:
+        item["sourceSymbol"] = f"invest-core:{name}"
+    return item
+
+
 def build_dataset(
     config: dict[str, Any],
     previous: dict[str, dict[str, Any]],
     fetcher=fetch_chart,
     pause: float = PAUSE_SECONDS,
+    index_series: Optional[dict[str, Series]] = None,
+    today: Optional[date] = None,
 ) -> tuple[dict[str, Any], int, int]:
     """सर्व groups साठी डेटा बनवा. Returns (dataset, success_count, total_count)."""
     groups_out: dict[str, list[dict[str, Any]]] = {}
@@ -161,7 +202,12 @@ def build_dataset(
         items: list[dict[str, Any]] = []
         for cfg in entries:
             total += 1
-            item = None
+            # S6: invest-core चा खरा index डेटा आधी; नसल्यास/जुना असल्यास Yahoo
+            item = index_item(cfg, index_series or {}, today or datetime.now(timezone.utc).date())
+            if item is not None:
+                success += 1
+                items.append(item)
+                continue
             best_points = -1
             min_points = int(cfg.get("minPoints", 2))
             # आधी मुख्य symbol, मग "fallbacks" क्रमाने. पुरेसा history (minPoints) मिळाला की थांबा;
@@ -199,6 +245,7 @@ def build_dataset(
     dataset = {
         "updated": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "source": "Yahoo Finance (unofficial, delayed)",
+        "summary": build_summary(groups_out),
         "groups": groups_out,
     }
     return dataset, success, total
@@ -217,11 +264,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--previous", type=Path, default=None)
+    parser.add_argument("--index-proxies", type=Path, default=Path("data-in/index_proxies.json"))
     args = parser.parse_args(argv)
 
     config = json.loads(args.config.read_text(encoding="utf-8"))
     previous = load_previous(args.previous)
-    dataset, success, total = build_dataset(config, previous)
+    dataset, success, total = build_dataset(config, previous, index_series=load_index_proxies(args.index_proxies))
 
     print(f"Fetched {success}/{total} symbols")
     if total == 0 or success / total < MIN_SUCCESS_RATIO:

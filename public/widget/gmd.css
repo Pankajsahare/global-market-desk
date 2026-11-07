@@ -46,3 +46,31 @@
   .gmd [hidden] { display:none !important; }
   .gmd__track-rate { font-size:28px; font-weight:700; }
   .gmd__hit { font-weight:700; }
+
+/* S1 / S2 / S3 */
+.gmd__top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+.gmd__print { background:transparent; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer; }
+.gmd__print:hover { border-color:var(--muted); }
+.gmd__closed { background:#1e293b; border:1px solid #475569; color:#cbd5e1; padding:8px 12px; border-radius:6px; font-size:13px; margin-bottom:16px; }
+.gmd__summary { margin:0; padding-left:18px; font-size:14px; }
+.gmd__summary li { margin:4px 0; }
+.gmd__print-head, .gmd__print-foot { display:none; }
+
+/* Print: फक्त डेटा — cue/mood/private भाग कधीच print होत नाहीत; पांढरी पार्श्वभूमी (कमी शाई) */
+@media print {
+  @page { size:A4; margin:12mm; }
+  body * { visibility:hidden; }
+  #gmd-root, #gmd-root * { visibility:visible; }
+  #gmd-root { position:absolute; left:0; top:0; width:100%;
+              --bg:#fff; --card:#fff; --text:#111; --muted:#555; --line:#ccc; padding:0; }
+  #gmd-root [data-mode="private"], #gmd-root .gmd__cta, #gmd-root .gmd__print,
+  #gmd-root #gmd-stale, #gmd-root h2 { display:none !important; }
+  #gmd-root .gmd__disc[data-mode="public"], #gmd-root .gmd__card--sectors { display:block !important; }
+  #gmd-root .gmd__print-head { display:block; font-size:20px; font-weight:700; margin-bottom:4px; }
+  #gmd-root .gmd__print-foot { display:block; font-size:10px; color:#444; border-top:1px solid #ccc; padding-top:6px; margin-top:8px; }
+  #gmd-root .gmd__card { border:1px solid #ddd; padding:10px; margin-bottom:8px; break-inside:avoid; }
+  #gmd-root .gmd__tile, #gmd-root .gmd__bar { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  #gmd-root .gmd__tile { color:#111; border:1px solid rgba(0,0,0,0.15); } /* पांढऱ्या कागदावर फिकट tiles वाचता यावेत */
+  #gmd-root .gmd__disc { background:#fff; border:1px solid #999; color:#222; }
+  #gmd-root table { min-width:0; }
+}

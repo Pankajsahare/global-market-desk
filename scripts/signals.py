@@ -1,6 +1,7 @@
 """
-India-open cue आणि Risk mood — wordpress/dashboard-widget.html मधल्या JS rules ची Python प्रत.
+India-open cue आणि Risk mood — public/widget/gmd.js मधल्या JS rules ची Python प्रत.
 ⚠️ Rules बदलल्यास दोन्ही ठिकाणी बदला (tests/test_signals.py parity तपासतो).
+   invest-core मध्ये core/cue_rules.py ही याचीच हुबेहूब प्रत आहे (S4 weekly report फरक दिसल्यास सांगतो).
 """
 from __future__ import annotations
 

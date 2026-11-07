@@ -7,7 +7,7 @@ on:
   workflow_dispatch: {}            # Actions tab मधून हाताने चालवण्यासाठी
   push:                            # config/script बदलल्यावर लगेच नवीन डेटा
     branches: [main]
-    paths: ["config/**", "scripts/**", "public/widget/**"]
+    paths: ["config/**", "scripts/**", "public/widget/**", "data-in/**"]
 
 permissions:
   contents: read

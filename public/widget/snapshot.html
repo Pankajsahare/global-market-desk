@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Global Markets Snapshot</title>
+<!--
+  S5 — रोजचा social snapshot (1080×1350, Instagram portrait).
+  scripts/snapshot.py हे पान headless browser मध्ये उघडून #snap चा PNG घेतो.
+  फक्त public डेटा: cue/mood इथे कधीच नाहीत.
+-->
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#000; font-family:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  #snap { width:1080px; height:1350px; background:linear-gradient(180deg,#0b1a33 0%,#0d1424 100%);
+          color:#e5e7eb; padding:56px 60px 44px; display:flex; flex-direction:column; gap:26px; }
+  .head { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #f2b134; padding-bottom:18px; }
+  .title { font-size:58px; font-weight:800; letter-spacing:1px; color:#fff; }
+  .date { font-size:26px; color:#cbd5e1; margin-top:6px; }
+  .brand { text-align:right; font-size:24px; font-weight:700; color:#f2b134; }
+  .brand small { display:block; font-size:18px; color:#94a3b8; font-weight:500; }
+  .moved { list-style:none; display:flex; flex-direction:column; gap:10px; }
+  .moved li { font-size:25px; line-height:1.35; padding-left:22px; position:relative; }
+  .moved li::before { content:""; position:absolute; left:0; top:13px; width:9px; height:9px; border-radius:50%; background:#f2b134; }
+  .section { font-size:20px; text-transform:uppercase; letter-spacing:2px; color:#94a3b8; margin-bottom:10px; }
+  .regions { display:grid; grid-template-columns:150px 1fr; gap:10px 14px; align-items:center; }
+  .region { font-size:22px; font-weight:700; color:#cbd5e1; }
+  .tiles { display:flex; gap:10px; }
+  .tile { flex:1; border-radius:12px; padding:12px 14px; color:#fff; min-height:84px; }
+  .tile .n { font-size:19px; opacity:0.92; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tile .c { font-size:30px; font-weight:800; }
+  .row3 { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .box { background:rgba(255,255,255,0.06); border-radius:12px; padding:14px 16px; }
+  .box .n { font-size:20px; color:#cbd5e1; }
+  .box .v { font-size:24px; font-weight:700; margin-top:4px; display:flex; gap:16px; }
+  .up { color:#34d399; } .down { color:#f87171; }
+  .sectors { display:grid; grid-template-columns:1fr 1fr; gap:14px 56px; }
+  .sectors ul { list-style:none; }
+  .sectors li { display:flex; justify-content:space-between; font-size:22px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.08); }
+  .foot { margin-top:auto; font-size:17px; color:#94a3b8; line-height:1.45; border-top:1px solid rgba(255,255,255,0.15); padding-top:14px; }
+  .foot b { color:#e5e7eb; }
+</style>
+</head>
+<body>
+<div id="snap">
+  <div class="head">
+    <div><div class="title">GLOBAL MARKETS</div><div class="date" id="date">—</div></div>
+    <div class="brand">Sahare Wealth<small>advisor4u.in</small></div>
+  </div>
+  <ul class="moved" id="moved"></ul>
+  <div>
+    <div class="section">Today's moves</div>
+    <div class="regions" id="regions"></div>
+  </div>
+  <div>
+    <div class="section">Fund category trend (index proxies)</div>
+    <div class="row3" id="funds"></div>
+  </div>
+  <div>
+    <div class="section">Indian sectors today</div>
+    <div class="sectors"><ul id="sec-top"></ul><ul id="sec-bottom"></ul></div>
+  </div>
+  <div class="foot">
+    <b>Sahare Wealth</b> · AMFI-registered Mutual Fund Distributor · ARN-151469<br>
+    Mutual Fund investments are subject to market risks, read all scheme related documents carefully.
+    Data delayed (Yahoo Finance); for information only, not investment advice or a recommendation.
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  var DATA_URL = new URLSearchParams(location.search).get('data') || '../data/market.json';
+  var REGIONS = ['India', 'US', 'Europe', 'Asia'];
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+  function isNum(v) { return typeof v === 'number' && isFinite(v); }
+  function pct(v) { return isNum(v) ? (v >= 0 ? '+' : '') + v.toFixed(2) + '%' : '—'; }
+  function cls(v) { return isNum(v) ? (v >= 0 ? 'up' : 'down') : ''; }
+  function tileBg(v) {
+    if (!isNum(v)) return '#374151';
+    var a = Math.max(0.3, Math.min(0.95, Math.abs(v) / 2)).toFixed(2);
+    return v >= 0 ? 'rgba(16,185,129,' + a + ')' : 'rgba(239,68,68,' + a + ')';
+  }
+
+  fetch(DATA_URL).then(function (r) { return r.json(); }).then(function (data) {
+    var g = data.groups || {};
+    var globals = g.global || [];
+    var latest = globals.map(function (x) { return x.asof; }).filter(Boolean).sort().pop();
+    if (latest) {
+      var p = latest.split('-');
+      document.getElementById('date').textContent = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2], 12))
+        .toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    var moved = document.getElementById('moved');
+    (data.summary || []).slice(0, 3).forEach(function (t) { moved.appendChild(el('li', '', String(t))); });
+
+    var regions = document.getElementById('regions');
+    REGIONS.forEach(function (region) {
+      var items = globals.filter(function (x) { return x.region === region; }).slice(0, 4);
+      if (!items.length) return;
+      regions.appendChild(el('div', 'region', region));
+      var row = el('div', 'tiles');
+      items.forEach(function (it) {
+        var t = el('div', 'tile');
+        t.style.background = tileBg(it.r1d);
+        t.appendChild(el('div', 'n', it.name));
+        t.appendChild(el('div', 'c', pct(it.r1d)));
+        row.appendChild(t);
+      });
+      regions.appendChild(row);
+    });
+
+    var funds = document.getElementById('funds');
+    (g.funds || []).forEach(function (it) {
+      var b = el('div', 'box');
+      b.appendChild(el('div', 'n', it.category || it.name));
+      var v = el('div', 'v');
+      v.appendChild(el('span', cls(it.r1m), '1M ' + pct(it.r1m)));
+      v.appendChild(document.createTextNode('  '));
+      v.appendChild(el('span', cls(it.r1y), '1Y ' + pct(it.r1y)));
+      b.appendChild(v);
+      funds.appendChild(b);
+    });
+
+    var sectors = (g.sectors || []).filter(function (x) { return isNum(x.r1d); })
+      .sort(function (a, b) { return b.r1d - a.r1d; });
+    function fill(id, list) {
+      var ul = document.getElementById(id);
+      list.forEach(function (it) {
+        var li = el('li');
+        li.appendChild(el('span', '', it.name.replace(/^NIFTY /, '')));
+        li.appendChild(el('span', cls(it.r1d), pct(it.r1d)));
+        ul.appendChild(li);
+      });
+    }
+    fill('sec-top', sectors.slice(0, 3));
+    fill('sec-bottom', sectors.slice(-3).reverse());
+    document.body.setAttribute('data-ready', '1');   // screenshot script यासाठी थांबतो
+  }).catch(function () { document.body.setAttribute('data-ready', 'error'); });
+})();
+</script>
+</body>
+</html>
