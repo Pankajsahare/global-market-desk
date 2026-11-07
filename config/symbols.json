@@ -4,7 +4,8 @@
       {
         "symbol": "^NSEI",
         "name": "NIFTY 50",
-        "region": "India"
+        "region": "India",
+        "nse": "NIFTY 50"
       },
       {
         "symbol": "^BSESN",
@@ -69,7 +70,8 @@
       },
       {
         "symbol": "^INDIAVIX",
-        "name": "India VIX"
+        "name": "India VIX",
+        "nse": "INDIA VIX"
       },
       {
         "symbol": "DX-Y.NYB",
@@ -104,43 +106,53 @@
     "sectors": [
       {
         "symbol": "^NSEBANK",
-        "name": "NIFTY Bank"
+        "name": "NIFTY Bank",
+        "nse": "NIFTY BANK"
       },
       {
         "symbol": "^CNXIT",
-        "name": "NIFTY IT"
+        "name": "NIFTY IT",
+        "nse": "NIFTY IT"
       },
       {
         "symbol": "^CNXPHARMA",
-        "name": "NIFTY Pharma"
+        "name": "NIFTY Pharma",
+        "nse": "NIFTY PHARMA"
       },
       {
         "symbol": "^CNXAUTO",
-        "name": "NIFTY Auto"
+        "name": "NIFTY Auto",
+        "nse": "NIFTY AUTO"
       },
       {
         "symbol": "^CNXFMCG",
-        "name": "NIFTY FMCG"
+        "name": "NIFTY FMCG",
+        "nse": "NIFTY FMCG"
       },
       {
         "symbol": "^CNXMETAL",
-        "name": "NIFTY Metal"
+        "name": "NIFTY Metal",
+        "nse": "NIFTY METAL"
       },
       {
         "symbol": "^CNXREALTY",
-        "name": "NIFTY Realty"
+        "name": "NIFTY Realty",
+        "nse": "NIFTY REALTY"
       },
       {
         "symbol": "^CNXENERGY",
-        "name": "NIFTY Energy"
+        "name": "NIFTY Energy",
+        "nse": "NIFTY ENERGY"
       },
       {
         "symbol": "^CNXPSUBANK",
-        "name": "NIFTY PSU Bank"
+        "name": "NIFTY PSU Bank",
+        "nse": "NIFTY PSU BANK"
       },
       {
         "symbol": "^CNXINFRA",
-        "name": "NIFTY Infra"
+        "name": "NIFTY Infra",
+        "nse": "NIFTY INFRASTRUCTURE"
       }
     ],
     "funds": [
@@ -150,7 +162,8 @@
         "category": "Large Cap",
         "minPoints": 250,
         "indexHistory": "Nifty 100",
-        "indexName": "NIFTY 100"
+        "indexName": "NIFTY 100",
+        "nse": "NIFTY 100"
       },
       {
         "symbol": "MID150BEES.NS",
@@ -168,7 +181,8 @@
         ],
         "minPoints": 250,
         "indexHistory": "Nifty Midcap 150",
-        "indexName": "NIFTY Midcap 150"
+        "indexName": "NIFTY Midcap 150",
+        "nse": "NIFTY MIDCAP 150"
       },
       {
         "symbol": "HDFCSML250.NS",
@@ -186,7 +200,8 @@
         ],
         "minPoints": 250,
         "indexHistory": "Nifty Smallcap 250",
-        "indexName": "NIFTY Smallcap 250"
+        "indexName": "NIFTY Smallcap 250",
+        "nse": "NIFTY SMALLCAP 250"
       }
     ]
   }

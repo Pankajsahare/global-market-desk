@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# Cue log बदलला असल्यास commit + push (दुसऱ्या run शी conflict झाल्यास 3 वेळा retry)
+# Log files बदलले असल्यास commit + push (दुसऱ्या run शी conflict झाल्यास 3 वेळा retry)
+# वापर: scripts/commit_log.sh "message" [file ...]   (default: public/log/cue-log.json)
 set -euo pipefail
 MSG="${1:-Update cue log}"
+shift || true
+FILES=("$@")
+if [ ${#FILES[@]} -eq 0 ]; then FILES=(public/log/cue-log.json); fi
 git config user.name "github-actions[bot]"
 git config user.email "41898531+github-actions[bot]@users.noreply.github.com"
-git add public/log/cue-log.json
+git add -- "${FILES[@]}"
 if git diff --cached --quiet; then
   echo "No log changes"
   exit 0

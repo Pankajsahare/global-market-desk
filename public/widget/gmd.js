@@ -113,6 +113,15 @@
     <ul class="gmd__list" id="gmd-rules"></ul>
   </div>
 
+  <!-- S1: Weekly recap signup CTA — form पानावर CSS ID "recap-signup" असलेल्या भागात -->
+  <div class="gmd__card gmd__signup" data-mode="public">
+    <div>
+      <h3>Get the Weekly Market Recap</h3>
+      <div class="gmd__sub">A one-page summary of global and Indian markets, free every Saturday on WhatsApp or email.</div>
+    </div>
+    <a class="gmd__signup-btn" href="#recap-signup">Subscribe free</a>
+  </div>
+
   <div class="gmd__cta" data-mode="public">
     <a href="https://wa.me/919405908605?text=Hi%2C%20I%20saw%20the%20Global%20Markets%20page%20on%20advisor4u.in" target="_blank" rel="noopener">Chat with Us on WhatsApp</a>
   </div>

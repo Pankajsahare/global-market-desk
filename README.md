@@ -16,6 +16,9 @@ advisor4u.in साठी जागतिक बाजाराचा delayed �
 | `scripts/summary.py` | S2: "What moved" वाक्यं (फक्त घडलेल्या घटना) |
 | `scripts/snapshot.py`, `public/widget/snapshot.html` | S5: रोज 16:11 IST ला 1080×1350 PNG → private Telegram (`snapshot.yml`) |
 | `scripts/weekly_recap.py`, `public/widget/weekly.html` | S5: दर शनिवारी 09:47 IST ला clients साठी 1 पानाचा Weekly Market Recap PDF → private Telegram (`weekly-recap.yml`) |
+| `scripts/fall_alert.py` | S2: NIFTY −2/−3/−4% किंवा India VIX +15/+25% → private Telegram alert + client WhatsApp draft (`fall-alert.yml`, बाजार चालू असताना दर 30 मिनिटं) |
+| `scripts/nse_source.py` | S3: Yahoo fail झाल्यास Indian indices साठी NSE `/api/allIndices` |
+| `wordpress/recap-signup-cf7.md` | S1: Weekly recap signup form (Contact Form 7 + Flamingo) |
 | `data-in/index_proxies.json` | S6: invest-core कडून NSE index closes (Midcap 150 / Smallcap 250 / Nifty 100); 7 दिवसांपेक्षा जुना असल्यास Yahoo |
 | `scripts/cue_tracker.py` | S3: सकाळचा cue vs NIFTY opening gap — `public/log/cue-log.json` |
 | `tests/test_build_data.py` | Offline tests: `python -m unittest discover -s tests` |

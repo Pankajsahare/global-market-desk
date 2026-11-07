@@ -1,0 +1,39 @@
+# S2 — भारतीय बाजार चालू असताना दर 30 मिनिटांनी: मोठी घसरण / VIX उडी → private Telegram alert + client draft.
+name: Market fall alert
+
+on:
+  schedule:
+    - cron: "7,37 4-10 * * 1-5"  # 09:37–16:07 IST, सोम–शुक्र
+  workflow_dispatch: {}
+
+permissions:
+  contents: write              # alerts.json (दिवसातून एकदा प्रति पातळी) commit साठी
+
+concurrency:
+  group: cue-log
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check and alert
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          NAME="${GITHUB_REPOSITORY#*/}"
+          python scripts/fall_alert.py \
+            --url "https://${OWNER,,}.github.io/${NAME}/data/market.json" \
+            --state public/log/alerts.json
+
+      - name: Save alert log
+        run: scripts/commit_log.sh "Record market alert" public/log/alerts.json

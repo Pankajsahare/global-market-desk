@@ -20,10 +20,11 @@ import urllib.parse
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from summary import build_summary, build_weekly_summary  # noqa: E402  (S2, S5)
+from nse_source import NseIndices, nse_item  # noqa: E402  (S3)
 
 YAHOO_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=2y"
 USER_AGENT = "Mozilla/5.0 (compatible; GlobalMarketDesk/1.0; +https://www.advisor4u.in)"
@@ -193,6 +194,7 @@ def build_dataset(
     pause: float = PAUSE_SECONDS,
     index_series: Optional[dict[str, Series]] = None,
     today: Optional[date] = None,
+    nse_lookup: Optional[Callable[[str], Optional[dict]]] = None,
 ) -> tuple[dict[str, Any], int, int]:
     """सर्व groups साठी डेटा बनवा. Returns (dataset, success_count, total_count)."""
     groups_out: dict[str, list[dict[str, Any]]] = {}
@@ -228,6 +230,12 @@ def build_dataset(
                     break
                 print(f"WARN {candidate['symbol']}: only {points} points (< {min_points}), trying fallback",
                       file=sys.stderr)
+            if item is None and cfg.get("nse") and nse_lookup is not None:
+                # S3: Yahoo fail → NSE (फक्त Indian indices)
+                row = nse_lookup(cfg["nse"])
+                item = nse_item(cfg, row, previous.get(cfg["symbol"])) if row else None
+                if item is not None:
+                    print(f"INFO {cfg['symbol']}: Yahoo failed, used NSE", file=sys.stderr)
             if item is not None:
                 success += 1
                 items.append(item)
@@ -270,7 +278,8 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     config = json.loads(args.config.read_text(encoding="utf-8"))
     previous = load_previous(args.previous)
-    dataset, success, total = build_dataset(config, previous, index_series=load_index_proxies(args.index_proxies))
+    dataset, success, total = build_dataset(config, previous, index_series=load_index_proxies(args.index_proxies),
+                                            nse_lookup=NseIndices().get)
 
     print(f"Fetched {success}/{total} symbols")
     if total == 0 or success / total < MIN_SUCCESS_RATIO:
