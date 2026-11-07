@@ -11,7 +11,9 @@ advisor4u.in साठी जागतिक बाजाराचा delayed �
 | `config/symbols.json` | कोणते symbols आणायचे — 4 गट: `global`, `risk`, `sectors`, `funds` |
 | `scripts/build_data.py` | Yahoo वरून डेटा आणून returns काढतो → `public/data/market.json` |
 | `.github/workflows/update-data.yml` | Schedule + Pages deploy |
-| `wordpress/dashboard-widget.html` | Elementor HTML widget (public + private दोन्ही पानांसाठी एकच code) |
+| `public/widget/gmd.js`, `gmd.css` | Dashboard widget — GitHub Pages वरून WP वर load होतो (S1) |
+| `wordpress/shortcode-snippet.php` | WP Code Snippets: `[gmd_dashboard]` / `[gmd_dashboard mode="private"]` |
+| `scripts/cue_tracker.py` | S3: सकाळचा cue vs NIFTY opening gap — `public/log/cue-log.json` |
 | `tests/test_build_data.py` | Offline tests: `python -m unittest discover -s tests` |
 
 ## `symbols.json` fields (JSON मध्ये comments चालत नाहीत, म्हणून इथे)
@@ -44,7 +46,7 @@ advisor4u.in साठी जागतिक बाजाराचा delayed �
 
 | File | काम |
 |---|---|
-| `scripts/signals.py` | Cue + mood rules (widget मधल्या JS ची Python प्रत — `tests/test_signals.py` दोन्ही जुळतात का तपासतो) |
+| `scripts/signals.py` | Cue + mood rules (`public/widget/gmd.js` मधल्या JS ची Python प्रत — `tests/test_signals.py` दोन्ही जुळतात का तपासतो) |
 | `scripts/morning_brief.py` | सोम–शुक्र ~8:40 IST ला brief (`.github/workflows/morning-brief.yml`) |
 | `scripts/alert.py` | सलग 3 failed updates → alert; पुन्हा चालू झाल्यावर "recovered" |
 

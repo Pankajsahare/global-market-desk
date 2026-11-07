@@ -4,6 +4,7 @@ S2 — Morning brief: live market.json वाचून cue + mood + top का�
 वापर:
     python scripts/morning_brief.py --url https://<owner>.github.io/<repo>/data/market.json
     python scripts/morning_brief.py --file sample.json --dry-run   # फक्त message छापा
+    --log public/log/cue-log.json  → आजचा cue नोंदवा (S3) + brief मध्ये hit-rate दाखवा
 """
 from __future__ import annotations
 
@@ -17,6 +18,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from cue_tracker import hit_rate, load_log, record  # noqa: E402
 from notify import send_telegram  # noqa: E402
 from signals import compute_cue, compute_mood, index_items  # noqa: E402
 
@@ -37,7 +39,8 @@ def _last(mapping: dict, symbol: str, digits: int = 2) -> str:
     return f"{item['last']:,.{digits}f}"
 
 
-def build_message(data: dict[str, Any], now: datetime | None = None) -> str:
+def build_message(data: dict[str, Any], now: datetime | None = None,
+                  track: tuple[int, int] | None = None) -> str:
     """market.json → Telegram message (plain text, English)."""
     now = now or datetime.now(IST)
     mapping, globals_ = index_items(data)
@@ -74,6 +77,8 @@ def build_message(data: dict[str, Any], now: datetime | None = None) -> str:
         f"India VIX {_last(mapping, '^INDIAVIX')} · US 10Y {tnx_text} · "
         f"USD/INR {_last(mapping, 'INR=X')} · Brent {_last(mapping, 'BZ=F')} · Gold {_last(mapping, 'GC=F', 1)}",
         "",
+        (f"Cue track record: {track[0]}/{track[1]} correct ({round(track[0] / track[1] * 100)}%) in recent sessions"
+         if track else "Cue track record: not enough sessions yet"),
         f"Dashboard: {DASHBOARD_URL}",
         "Delayed data. Internal use only — not investment advice.",
     ]
@@ -95,6 +100,7 @@ def main(argv: list[str] | None = None) -> int:
     src.add_argument("--url")
     src.add_argument("--file", type=Path)
     parser.add_argument("--dry-run", action="store_true", help="message फक्त छापा, पाठवू नका")
+    parser.add_argument("--log", type=Path, default=None, help="cue log (S3): नोंद + hit-rate")
     args = parser.parse_args(argv)
 
     try:
@@ -105,7 +111,15 @@ def main(argv: list[str] | None = None) -> int:
             send_telegram("⚠️ Morning Desk: market data could not be loaded today. Check GitHub Actions.")
         return 1
 
-    message = build_message(data)
+    track = None
+    if args.log:
+        mapping, globals_ = index_items(data)
+        if not args.dry_run:
+            # Telegram fail झाला तरी नोंद आधी करा
+            record(args.log, compute_cue(mapping), compute_mood(mapping, globals_), datetime.now(timezone.utc))
+        track = hit_rate(load_log(args.log))
+
+    message = build_message(data, track=track)
     print(message)
     if args.dry_run:
         return 0

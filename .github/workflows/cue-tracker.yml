@@ -1,0 +1,31 @@
+# S3 — सोम–शुक्र 16:00 IST ला आजचा cue NIFTY च्या opening gap शी तपासा.
+name: Cue tracker
+
+on:
+  schedule:
+    - cron: "30 10 * * 1-5"  # 10:30 UTC = 16:00 IST
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cue-log
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Evaluate pending cues
+        run: python scripts/cue_tracker.py evaluate --log public/log/cue-log.json
+
+      - name: Commit cue log
+        run: scripts/commit_log.sh "Evaluate cue vs NIFTY open"

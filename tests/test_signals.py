@@ -65,8 +65,8 @@ class JsParityTests(unittest.TestCase):
     """Widget मधले JS rules आणि Python rules एकच निकाल देतात का."""
 
     def test_same_results(self):
-        html = (ROOT / "wordpress" / "dashboard-widget.html").read_text(encoding="utf-8")
-        js = html.split("<script>", 1)[1].split("// ---------- start ----------", 1)[0]
+        src = (ROOT / "public" / "widget" / "gmd.js").read_text(encoding="utf-8")
+        js = src.split("// ---------- start ----------", 1)[0]
         js = js.replace("(function () {", "", 1)
         harness = js + """
         var data = JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'));

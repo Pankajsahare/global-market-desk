@@ -1,0 +1,48 @@
+/* Global Market Desk widget — advisor4u.in. GitHub Pages वरून load होतो. */
+.gmd { --bg:#11141c; --card:#1a1d27; --line:#2d3139; --text:#e5e7eb; --muted:#9ca3af; --up:#10b981; --down:#ef4444; --warn:#f59e0b;
+         background:var(--bg); color:var(--text); padding:20px; border-radius:12px; font-family:inherit; line-height:1.4; }
+  .gmd *, .gmd *::before, .gmd *::after { box-sizing:border-box; }
+  .gmd h2 { font-size:22px; margin:0 0 4px; color:var(--text); }
+  .gmd h3 { font-size:16px; margin:0 0 12px; color:var(--text); }
+  .gmd__meta { font-size:12px; color:var(--muted); margin-bottom:16px; }
+  .gmd__banner { background:#3b2f0b; border:1px solid var(--warn); color:#fde68a; padding:8px 12px; border-radius:6px; font-size:13px; margin-bottom:16px; }
+  .gmd__disc { background:#fff3cd; border:1px solid #ffc107; color:#664d03; padding:12px 16px; border-radius:6px; font-size:13px; margin-bottom:20px; }
+  .gmd__grid2 { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px; margin-bottom:16px; }
+  .gmd__card { background:var(--card); border-radius:10px; padding:18px; margin-bottom:16px; overflow-x:auto; }
+  .gmd__grid2 .gmd__card { margin-bottom:0; }
+  .gmd__big { font-size:28px; font-weight:700; margin-bottom:4px; }
+  .gmd__sub { font-size:13px; color:var(--muted); margin-bottom:12px; }
+  .gmd__gauge { position:relative; height:12px; border-radius:6px; margin:10px 0 18px;
+                background:linear-gradient(90deg, var(--down) 0%, #6b7280 50%, var(--up) 100%); }
+  .gmd__gauge-mark { position:absolute; top:-5px; width:4px; height:22px; background:#fff; border-radius:2px; transform:translateX(-2px); }
+  .gmd__list { list-style:none; padding:0; margin:0; font-size:13px; }
+  .gmd__list li { padding:6px 0; border-top:1px solid var(--line); display:flex; gap:8px; }
+  .gmd__pts { min-width:38px; font-weight:600; text-align:right; }
+  .gmd__region { margin-bottom:12px; }
+  .gmd__region-name { font-size:12px; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em; }
+  .gmd__tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:8px; }
+  .gmd__tile { border-radius:8px; padding:10px 12px; color:#fff; }
+  .gmd__tile-name { font-size:12px; opacity:0.9; }
+  .gmd__tile-last { font-size:16px; font-weight:700; }
+  .gmd__tile-chg { font-size:13px; font-weight:600; }
+  .gmd table { width:100%; border-collapse:collapse; font-size:13px; min-width:420px; border:0; margin:0; background:transparent; }
+  .gmd table th, .gmd table td { border:0; border-bottom:1px solid var(--line); background:transparent; } /* theme च्या table borders काढा */
+  .gmd th { text-align:right; color:var(--muted); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--line); }
+  .gmd th:first-child, .gmd td:first-child { text-align:left; }
+  .gmd td { text-align:right; padding:7px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  .gmd .is-up { color:var(--up); }
+  .gmd .is-down { color:var(--down); }
+  .gmd__bar-row { display:grid; grid-template-columns:minmax(150px, 1.2fr) 1fr 64px; gap:8px; align-items:center; font-size:13px; padding:4px 0; }
+  .gmd__badge { white-space:nowrap; }
+  .gmd__bar-track { position:relative; height:14px; background:#252935; border-radius:4px; }
+  .gmd__bar { position:absolute; top:0; height:14px; border-radius:4px; }
+  .gmd__bar-axis { position:absolute; left:50%; top:-2px; width:1px; height:18px; background:var(--muted); }
+  .gmd__badge { font-size:10px; padding:1px 6px; border-radius:8px; margin-left:6px; vertical-align:middle; }
+  .gmd__badge--top { background:#064e3b; color:#6ee7b7; }
+  .gmd__badge--bottom { background:#7f1d1d; color:#fca5a5; }
+  .gmd__note { font-size:12px; color:var(--muted); margin-top:10px; }
+  .gmd__cta { text-align:center; margin-top:8px; }
+  .gmd__cta a { background:#25D366; color:#fff; padding:13px 30px; border-radius:6px; text-decoration:none; font-weight:600; display:inline-block; }
+  .gmd [hidden] { display:none !important; }
+  .gmd__track-rate { font-size:28px; font-weight:700; }
+  .gmd__hit { font-weight:700; }

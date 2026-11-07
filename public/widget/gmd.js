@@ -1,59 +1,23 @@
-<!--
-  Global Market Desk — Elementor "HTML" widget मध्ये पूर्ण paste करा.
-  एकच code, 2 पानं:
-    • Public पान "Global Markets"  → MODE = 'public'  (फक्त डेटा)
-    • Private पान "Morning Desk"   → MODE = 'private' (cue, mood, sector rotation, calendar)
--->
-<style>
-  .gmd { --bg:#11141c; --card:#1a1d27; --line:#2d3139; --text:#e5e7eb; --muted:#9ca3af; --up:#10b981; --down:#ef4444; --warn:#f59e0b;
-         background:var(--bg); color:var(--text); padding:20px; border-radius:12px; font-family:inherit; line-height:1.4; }
-  .gmd *, .gmd *::before, .gmd *::after { box-sizing:border-box; }
-  .gmd h2 { font-size:22px; margin:0 0 4px; color:var(--text); }
-  .gmd h3 { font-size:16px; margin:0 0 12px; color:var(--text); }
-  .gmd__meta { font-size:12px; color:var(--muted); margin-bottom:16px; }
-  .gmd__banner { background:#3b2f0b; border:1px solid var(--warn); color:#fde68a; padding:8px 12px; border-radius:6px; font-size:13px; margin-bottom:16px; }
-  .gmd__disc { background:#fff3cd; border:1px solid #ffc107; color:#664d03; padding:12px 16px; border-radius:6px; font-size:13px; margin-bottom:20px; }
-  .gmd__grid2 { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px; margin-bottom:16px; }
-  .gmd__card { background:var(--card); border-radius:10px; padding:18px; margin-bottom:16px; overflow-x:auto; }
-  .gmd__grid2 .gmd__card { margin-bottom:0; }
-  .gmd__big { font-size:28px; font-weight:700; margin-bottom:4px; }
-  .gmd__sub { font-size:13px; color:var(--muted); margin-bottom:12px; }
-  .gmd__gauge { position:relative; height:12px; border-radius:6px; margin:10px 0 18px;
-                background:linear-gradient(90deg, var(--down) 0%, #6b7280 50%, var(--up) 100%); }
-  .gmd__gauge-mark { position:absolute; top:-5px; width:4px; height:22px; background:#fff; border-radius:2px; transform:translateX(-2px); }
-  .gmd__list { list-style:none; padding:0; margin:0; font-size:13px; }
-  .gmd__list li { padding:6px 0; border-top:1px solid var(--line); display:flex; gap:8px; }
-  .gmd__pts { min-width:38px; font-weight:600; text-align:right; }
-  .gmd__region { margin-bottom:12px; }
-  .gmd__region-name { font-size:12px; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em; }
-  .gmd__tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:8px; }
-  .gmd__tile { border-radius:8px; padding:10px 12px; color:#fff; }
-  .gmd__tile-name { font-size:12px; opacity:0.9; }
-  .gmd__tile-last { font-size:16px; font-weight:700; }
-  .gmd__tile-chg { font-size:13px; font-weight:600; }
-  .gmd table { width:100%; border-collapse:collapse; font-size:13px; min-width:420px; border:0; margin:0; background:transparent; }
-  .gmd table th, .gmd table td { border:0; border-bottom:1px solid var(--line); background:transparent; } /* theme च्या table borders काढा */
-  .gmd th { text-align:right; color:var(--muted); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--line); }
-  .gmd th:first-child, .gmd td:first-child { text-align:left; }
-  .gmd td { text-align:right; padding:7px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
-  .gmd .is-up { color:var(--up); }
-  .gmd .is-down { color:var(--down); }
-  .gmd__bar-row { display:grid; grid-template-columns:minmax(150px, 1.2fr) 1fr 64px; gap:8px; align-items:center; font-size:13px; padding:4px 0; }
-  .gmd__badge { white-space:nowrap; }
-  .gmd__bar-track { position:relative; height:14px; background:#252935; border-radius:4px; }
-  .gmd__bar { position:absolute; top:0; height:14px; border-radius:4px; }
-  .gmd__bar-axis { position:absolute; left:50%; top:-2px; width:1px; height:18px; background:var(--muted); }
-  .gmd__badge { font-size:10px; padding:1px 6px; border-radius:8px; margin-left:6px; vertical-align:middle; }
-  .gmd__badge--top { background:#064e3b; color:#6ee7b7; }
-  .gmd__badge--bottom { background:#7f1d1d; color:#fca5a5; }
-  .gmd__note { font-size:12px; color:var(--muted); margin-top:10px; }
-  .gmd__cta { text-align:center; margin-top:8px; }
-  .gmd__cta a { background:#25D366; color:#fff; padding:13px 30px; border-radius:6px; text-decoration:none; font-weight:600; display:inline-block; }
-  .gmd [hidden] { display:none !important; }
-</style>
+/*
+ * Global Market Desk widget — advisor4u.in
+ * WP shortcode [gmd_dashboard mode="public|private"] हा file GitHub Pages वरून load करतो.
+ * इथे बदल push केला की ~10 मिनिटांत दोन्ही पानं update होतात — WP मध्ये काही बदलायची गरज नाही.
+ */
+(function () {
+  'use strict';
 
-<div class="gmd" id="gmd-root">
-  <h2 id="gmd-title">Global Markets</h2>
+  // Mode WP shortcode च्या data-mode वरून ठरतो (default 'public' — सुरक्षित)
+  var MODE = 'public';
+
+  // GitHub Pages वरचे files (workflow हेच बनवतो)
+  var BASE_URL = 'https://pankajsahare.github.io/global-market-desk/';
+  var DATA_URL = BASE_URL + 'data/market.json';
+  var LOG_URL = BASE_URL + 'log/cue-log.json';
+  var TRACK_WINDOW = 30;    // hit-rate साठी शेवटचे किती sessions
+  var TRACK_ROWS = 10;      // table मध्ये किती ओळी
+
+  // पानाचा HTML ढाचा (बाहेरचा डेटा यात नाही — म्हणून innerHTML सुरक्षित)
+  var MARKUP = `<h2 id="gmd-title">Global Markets</h2>
   <div class="gmd__meta" id="gmd-updated">Loading market data…</div>
   <div class="gmd__banner" id="gmd-stale" hidden></div>
 
@@ -122,6 +86,16 @@
     <div id="gmd-calendar"></div>
   </div>
 
+  <!-- PRIVATE: Cue track record (S3) -->
+  <div class="gmd__card" data-mode="private" hidden>
+    <h3>Cue Track Record</h3>
+    <div class="gmd__track-rate" id="gmd-track-rate">—</div>
+    <div class="gmd__sub" id="gmd-track-sub">Loading…</div>
+    <table><thead><tr><th>Date</th><th>Cue</th><th>Score</th><th>NIFTY open gap</th><th>Result</th></tr></thead>
+      <tbody id="gmd-track"></tbody></table>
+    <div class="gmd__note">A cue counts as correct when its direction (up / flat / down, ±0.15 band) matches NIFTY 50's opening gap versus the previous close (±0.15% band).</div>
+  </div>
+
   <div class="gmd__card" data-mode="private" hidden>
     <h3>How the summary is calculated</h3>
     <ul class="gmd__list" id="gmd-rules"></ul>
@@ -129,19 +103,7 @@
 
   <div class="gmd__cta" data-mode="public">
     <a href="https://wa.me/919405908605?text=Hi%2C%20I%20saw%20the%20Global%20Markets%20page%20on%20advisor4u.in" target="_blank" rel="noopener">Chat with Us on WhatsApp</a>
-  </div>
-</div>
-
-<script>
-(function () {
-  'use strict';
-
-  // TODO [मॅन्युअल बदल]: पानानुसार 'public' किंवा 'private' | Private फक्त WP "Private" visibility असलेल्या पानावर
-  //   न बदलल्यास: default 'public' → cue/mood दिसणार नाहीत (सुरक्षित default)
-  var MODE = 'public';  // ← येथे बदला
-
-  // GitHub Pages वरचा data file (workflow हाच बनवतो)
-  var DATA_URL = 'https://pankajsahare.github.io/global-market-desk/data/market.json';
+  </div>`;
   var STALE_MINUTES = 60;   // weekday ला यापेक्षा जुना डेटा → warning
   var REGION_ORDER = ['India', 'US', 'Europe', 'Asia'];
 
@@ -481,6 +443,41 @@
     box.appendChild(wrap);
   }
 
+  // S3: cue log → hit-rate + शेवटच्या नोंदी
+  function renderTrack(log) {
+    var entries = (log && Array.isArray(log.entries)) ? log.entries : [];
+    var done = entries.filter(function (e) { return e.status === 'done'; });
+    var recent = done.slice(-TRACK_WINDOW);
+    var hits = recent.filter(function (e) { return e.hit === true; }).length;
+    if (recent.length) {
+      $('gmd-track-rate').textContent = Math.round(hits / recent.length * 100) + '%';
+      $('gmd-track-sub').textContent = hits + ' of ' + recent.length + ' sessions correct (last ' + TRACK_WINDOW + ' max)' +
+        (recent.length < 20 ? ' · small sample, treat with caution' : '');
+    } else {
+      $('gmd-track-rate').textContent = '—';
+      $('gmd-track-sub').textContent = 'No evaluated sessions yet. The first result appears after the next trading day.';
+    }
+    var body = $('gmd-track');
+    body.textContent = '';
+    entries.filter(function (e) { return e.status !== 'holiday'; }).slice(-TRACK_ROWS).reverse().forEach(function (e) {
+      var tr = el('tr');
+      tr.appendChild(el('td', '', e.date));
+      tr.appendChild(el('td', '', e.cueLabel || '—'));
+      tr.appendChild(el('td', '', isNum(e.cueScore) ? (e.cueScore >= 0 ? '+' : '') + e.cueScore.toFixed(2) : '—'));
+      tr.appendChild(pctCell(e.actualGapPct));
+      var res = e.status === 'done' ? (e.hit ? '✓ Correct' : '✗ Missed') : 'Pending';
+      tr.appendChild(el('td', 'gmd__hit ' + (e.status === 'done' ? (e.hit ? 'is-up' : 'is-down') : ''), res));
+      body.appendChild(tr);
+    });
+  }
+
+  function loadTrack() {
+    fetch(LOG_URL + '?v=' + Math.floor(Date.now() / 300000), { credentials: 'omit' })
+      .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+      .then(renderTrack)
+      .catch(function () { renderTrack(null); });
+  }
+
   function applyMode() {
     var nodes = document.querySelectorAll('#gmd-root [data-mode]');
     for (var i = 0; i < nodes.length; i++) {
@@ -494,42 +491,56 @@
   }
 
   // ---------- start ----------
-  applyMode();
-  if (MODE === 'private') { renderRules(); loadCalendar(); }
+  function start() {
+    var root = document.getElementById('gmd-root');
+    if (!root || root.getAttribute('data-gmd-ready')) return;
+    root.setAttribute('data-gmd-ready', '1');      // दोनदा render टाळा
+    MODE = root.getAttribute('data-mode') === 'private' ? 'private' : 'public';
+    root.classList.add('gmd');
+    root.innerHTML = MARKUP;
 
-  // 5-मिनिटांचा cache-buster — CDN cache मधला खूप जुना डेटा टाळतो
-  var bucket = Math.floor(Date.now() / 300000);
-  fetch(DATA_URL + '?v=' + bucket, { credentials: 'omit' })
-    .then(function (res) {
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      return res.json();
-    })
-    .then(function (data) {
-      var groups = (data && data.groups) || {};
-      var globals = groups.global || [], risk = groups.risk || [];
-      var sectors = groups.sectors || [], funds = groups.funds || [];
-      var all = globals.concat(risk, sectors, funds);
-      if (!all.length) throw new Error('Empty data');
+    applyMode();
+    if (MODE === 'private') { renderRules(); loadCalendar(); loadTrack(); }
 
-      var map = {};
-      all.forEach(function (i) { map[i.symbol] = i; });
+    // 5-मिनिटांचा cache-buster — CDN cache मधला खूप जुना डेटा टाळतो
+    var bucket = Math.floor(Date.now() / 300000);
+    fetch(DATA_URL + '?v=' + bucket, { credentials: 'omit' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        var groups = (data && data.groups) || {};
+        var globals = groups.global || [], risk = groups.risk || [];
+        var sectors = groups.sectors || [], funds = groups.funds || [];
+        var all = globals.concat(risk, sectors, funds);
+        if (!all.length) throw new Error('Empty data');
 
-      renderMeta(data, all);
-      renderHeatmap(globals);
-      renderRisk(risk);
-      renderFunds(funds);
+        var map = {};
+        all.forEach(function (i) { map[i.symbol] = i; });
 
-      if (MODE === 'private') {
-        renderCue(computeCue(map));
-        renderMood(computeMood(map, globals));
-        renderRotation(sectors);
-      } else {
-        renderSectors(sectors);
-      }
-    })
-    .catch(function (err) {
-      console.error('Global Market Desk: data load failed', err);
-      showError();
-    });
+        renderMeta(data, all);
+        renderHeatmap(globals);
+        renderRisk(risk);
+        renderFunds(funds);
+
+        if (MODE === 'private') {
+          renderCue(computeCue(map));
+          renderMood(computeMood(map, globals));
+          renderRotation(sectors);
+        } else {
+          renderSectors(sectors);
+        }
+      })
+      .catch(function (err) {
+        console.error('Global Market Desk: data load failed', err);
+        showError();
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
 })();
-</script>

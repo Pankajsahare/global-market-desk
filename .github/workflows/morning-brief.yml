@@ -1,4 +1,4 @@
-# S2 — सोम–शुक्र सकाळी ~8:40 IST ला private Telegram chat वर Morning Desk brief.
+# S2 + S3 — सोम–शुक्र सकाळी ~8:40 IST ला private Telegram brief, आणि आजचा cue log मध्ये नोंदवा.
 name: Morning brief
 
 on:
@@ -7,7 +7,11 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write            # cue log commit करण्यासाठी
+
+concurrency:
+  group: cue-log
+  cancel-in-progress: false
 
 jobs:
   brief:
@@ -20,11 +24,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Send brief
+      - name: Send brief and record cue
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           OWNER="${GITHUB_REPOSITORY%%/*}"
           NAME="${GITHUB_REPOSITORY#*/}"
-          python scripts/morning_brief.py --url "https://${OWNER,,}.github.io/${NAME}/data/market.json"
+          python scripts/morning_brief.py \
+            --url "https://${OWNER,,}.github.io/${NAME}/data/market.json" \
+            --log public/log/cue-log.json
+
+      - name: Commit cue log
+        if: always()
+        run: scripts/commit_log.sh "Record morning cue"
