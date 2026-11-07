@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from summary import build_summary  # noqa: E402
+from summary import build_summary, build_weekly_summary  # noqa: E402
 
 FIXTURE = json.loads((ROOT / "tests" / "fixtures_market.json").read_text(encoding="utf-8"))
 BANNED = ("buy", "sell", "should", "recommend", "expect", "will ", "target", "advice")
@@ -35,6 +35,16 @@ class SummaryTests(unittest.TestCase):
             {"symbol": "b", "name": "B", "region": "US", "last": 1, "r1d": -0.3},
             {"symbol": "c", "name": "C", "region": "US", "last": 1, "r1d": 0.1}]}
         self.assertEqual(build_summary(groups), ["Wall Street was mixed: A +0.40%, B -0.30%, C +0.10%."])
+
+
+class WeeklySummaryTests(unittest.TestCase):
+    def test_weekly_uses_week_moves(self):
+        lines = build_weekly_summary(FIXTURE["groups"])
+        self.assertTrue(lines[0].startswith("NIFTY 50 rose 8.58% this week"))
+        self.assertTrue(all("this week" in l for l in lines))
+        text = " ".join(lines).lower()
+        for word in BANNED:
+            self.assertNotIn(word, text)
 
 
 if __name__ == "__main__":

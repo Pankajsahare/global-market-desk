@@ -15,6 +15,7 @@ advisor4u.in साठी जागतिक बाजाराचा delayed �
 | `wordpress/shortcode-snippet.php` | WP Code Snippets: `[gmd_dashboard]` / `[gmd_dashboard mode="private"]` |
 | `scripts/summary.py` | S2: "What moved" वाक्यं (फक्त घडलेल्या घटना) |
 | `scripts/snapshot.py`, `public/widget/snapshot.html` | S5: रोज 16:11 IST ला 1080×1350 PNG → private Telegram (`snapshot.yml`) |
+| `scripts/weekly_recap.py`, `public/widget/weekly.html` | S5: दर शनिवारी 09:47 IST ला clients साठी 1 पानाचा Weekly Market Recap PDF → private Telegram (`weekly-recap.yml`) |
 | `data-in/index_proxies.json` | S6: invest-core कडून NSE index closes (Midcap 150 / Smallcap 250 / Nifty 100); 7 दिवसांपेक्षा जुना असल्यास Yahoo |
 | `scripts/cue_tracker.py` | S3: सकाळचा cue vs NIFTY opening gap — `public/log/cue-log.json` |
 | `tests/test_build_data.py` | Offline tests: `python -m unittest discover -s tests` |

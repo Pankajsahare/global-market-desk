@@ -1,0 +1,47 @@
+# S5 — दर शनिवारी 09:47 IST: clients साठी Weekly Market Recap PDF → तुमचा private Telegram.
+# तिथून वाचून मगच clients ना forward करा.
+name: Weekly recap
+
+on:
+  schedule:
+    - cron: "17 4 * * 6"  # 04:17 UTC = 09:47 IST, Saturday
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  recap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install headless browser
+        run: |
+          pip install -q playwright==1.48.0
+          python -m playwright install --with-deps chromium
+
+      - name: Download live data
+        run: |
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          NAME="${GITHUB_REPOSITORY#*/}"
+          curl -fsSL "https://${OWNER,,}.github.io/${NAME}/data/market.json?b=$(date +%s)" -o market.json
+
+      - name: Render and send
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/weekly_recap.py --data market.json --out weekly-recap.pdf --send
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weekly-recap
+          path: weekly-recap.pdf
+          retention-days: 14
+          if-no-files-found: ignore

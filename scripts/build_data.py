@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from summary import build_summary  # noqa: E402  (S2)
+from summary import build_summary, build_weekly_summary  # noqa: E402  (S2, S5)
 
 YAHOO_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=2y"
 USER_AGENT = "Mozilla/5.0 (compatible; GlobalMarketDesk/1.0; +https://www.advisor4u.in)"
@@ -246,6 +246,7 @@ def build_dataset(
         "updated": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "source": "Yahoo Finance (unofficial, delayed)",
         "summary": build_summary(groups_out),
+        "weeklySummary": build_weekly_summary(groups_out),
         "groups": groups_out,
     }
     return dataset, success, total

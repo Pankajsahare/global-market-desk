@@ -51,6 +51,7 @@
       <div class="gmd__sub" id="gmd-mood-score"></div>
       <div class="gmd__gauge"><div class="gmd__gauge-mark" id="gmd-mood-mark" style="left:50%"></div></div>
       <ul class="gmd__list" id="gmd-mood-reasons"></ul>
+      <div class="gmd__note">Describes current conditions only — not a predictor. In the backtest, mood showed no link with NIFTY 50's next 5 sessions.</div>
     </div>
   </div>
 
@@ -101,6 +102,7 @@
     <h3>Cue Track Record</h3>
     <div class="gmd__track-rate" id="gmd-track-rate">—</div>
     <div class="gmd__sub" id="gmd-track-sub">Loading…</div>
+    <div class="gmd__sub" id="gmd-track-strength"></div>
     <table><thead><tr><th>Date</th><th>Cue</th><th>Score</th><th>NIFTY open gap</th><th>Result</th></tr></thead>
       <tbody id="gmd-track"></tbody></table>
     <div class="gmd__note">A cue counts as correct when its direction (up / flat / down, ±0.15 band) matches NIFTY 50's opening gap versus the previous close (±0.15% band).</div>
@@ -512,6 +514,15 @@
       $('gmd-track-rate').textContent = '—';
       $('gmd-track-sub').textContent = 'No evaluated sessions yet. The first result appears after the next trading day.';
     }
+    // S2: cue किती ठाम होता त्यानुसार live hit-rate (strong |score| ≥ 0.5, mild 0.15–0.5)
+    var parts = [['Strong', function (a) { return a >= 0.5; }], ['Mild', function (a) { return a >= 0.15 && a < 0.5; }],
+                 ['Flat', function (a) { return a < 0.15; }]].map(function (b) {
+      var group = recent.filter(function (e) { return isNum(e.cueScore) && b[1](Math.abs(e.cueScore)); });
+      var h = group.filter(function (e) { return e.hit === true; }).length;
+      return group.length ? b[0] + ' cues: ' + h + '/' + group.length : null;
+    }).filter(Boolean);
+    $('gmd-track-strength').textContent = parts.length ? parts.join(' · ') : '';
+
     var body = $('gmd-track');
     body.textContent = '';
     entries.filter(function (e) { return e.status !== 'holiday'; }).slice(-TRACK_ROWS).reverse().forEach(function (e) {

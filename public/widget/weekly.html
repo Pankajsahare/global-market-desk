@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Weekly Market Recap — Sahare Wealth</title>
+<!--
+  S5 — Weekly Market Recap (A4, clients साठी).
+  scripts/weekly_recap.py हे पान headless browser मध्ये उघडून PDF बनवतो.
+  फक्त public डेटा आणि घडलेल्या घटना: cue, mood, सल्ला किंवा अंदाज कधीच नाही.
+-->
+<style>
+  @page { size:A4; margin:0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color:#1f2937; background:#fff; }
+  .page { width:210mm; height:297mm; padding:12mm 14mm 9mm; display:flex; flex-direction:column; overflow:hidden; }
+  .head { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:3px solid #f2b134; padding-bottom:8px; margin-bottom:10px; }
+  .title { font-size:24px; font-weight:800; color:#0b1a33; }
+  .sub { font-size:12px; color:#4b5563; margin-top:2px; }
+  .brand { text-align:right; font-size:14px; font-weight:700; color:#0b1a33; }
+  .brand small { display:block; font-size:10px; color:#6b7280; font-weight:500; }
+  h2 { font-size:12.5px; text-transform:uppercase; letter-spacing:1px; color:#0b1a33; margin:10px 0 5px; }
+  ul.moved { padding-left:16px; font-size:12px; line-height:1.5; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  table { width:100%; border-collapse:collapse; font-size:11px; }
+  th { text-align:right; font-weight:600; color:#6b7280; border-bottom:1px solid #d1d5db; padding:4px 5px; }
+  td { text-align:right; padding:3px 5px; border-bottom:1px solid #eef0f3; white-space:nowrap; }
+  th:first-child, td:first-child { text-align:left; }
+  tr.region td { font-weight:700; color:#0b1a33; background:#f8fafc; text-align:left; }
+  .up { color:#047857; } .down { color:#b91c1c; }
+  .note { font-size:9.5px; color:#6b7280; margin-top:4px; }
+  .foot { margin-top:auto; padding-top:8px; border-top:1px solid #d1d5db; font-size:9.5px; color:#4b5563; line-height:1.5; }
+  .foot b { color:#111827; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <div>
+      <div class="title">Weekly Market Recap</div>
+      <div class="sub" id="week">—</div>
+    </div>
+    <div class="brand">Sahare Wealth<small>AMFI-registered MFD · ARN-151469 · advisor4u.in</small></div>
+  </div>
+
+  <h2>The week in brief</h2>
+  <ul class="moved" id="moved"></ul>
+
+  <h2>World markets</h2>
+  <table><thead><tr><th>Index</th><th>Close</th><th>1 week</th><th>1 month</th><th>1 year</th></tr></thead>
+    <tbody id="global"></tbody></table>
+
+  <div class="grid">
+    <div>
+      <h2>Fund category trend</h2>
+      <table><thead><tr><th>Category</th><th>1W</th><th>1M</th><th>3M</th><th>1Y</th></tr></thead>
+        <tbody id="funds"></tbody></table>
+      <div class="note">Shown using the category's benchmark index. Actual fund returns will differ.</div>
+      <h2>Currency, commodities &amp; rates</h2>
+      <table><thead><tr><th>Indicator</th><th>Last</th><th>1 week</th></tr></thead>
+        <tbody id="risk"></tbody></table>
+    </div>
+    <div>
+      <h2>Indian sectors — 1 week</h2>
+      <table><thead><tr><th>Sector</th><th>1 week</th><th>1 month</th></tr></thead>
+        <tbody id="sectors"></tbody></table>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>Sahare Wealth</b> · AMFI-registered Mutual Fund Distributor · ARN-151469 · www.advisor4u.in · info@advisor4u.in · +91 94059 08605<br>
+    Mutual Fund investments are subject to market risks, read all scheme related documents carefully. Past performance is not indicative of future returns.
+    This recap describes market movements using delayed third-party data (Yahoo Finance, NSE) for information only. It is not investment advice, research or a recommendation to buy or sell any security or scheme.
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  var DATA_URL = new URLSearchParams(location.search).get('data') || '../data/market.json';
+  var REGIONS = ['India', 'US', 'Europe', 'Asia'];
+  var RISK = ['INR=X', 'BZ=F', 'GC=F', 'DX-Y.NYB', '^TNX', '^INDIAVIX', '^VIX'];
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+  function isNum(v) { return typeof v === 'number' && isFinite(v); }
+  function pct(v) { return isNum(v) ? (v >= 0 ? '+' : '') + v.toFixed(2) + '%' : '—'; }
+  function num(v, d) { return isNum(v) ? v.toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d }) : '—'; }
+  function pctCell(v) { return el('td', isNum(v) ? (v >= 0 ? 'up' : 'down') : '', pct(v)); }
+  function row(cells) { var tr = el('tr'); cells.forEach(function (c) { tr.appendChild(c); }); return tr; }
+
+  fetch(DATA_URL).then(function (r) { return r.json(); }).then(function (data) {
+    var g = data.groups || {};
+    var globals = g.global || [];
+    var latest = globals.map(function (x) { return x.asof; }).filter(Boolean).sort().pop();
+    if (latest) {
+      var p = latest.split('-');
+      document.getElementById('week').textContent = 'Week ended ' + new Date(Date.UTC(+p[0], +p[1] - 1, +p[2], 12))
+        .toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    var moved = document.getElementById('moved');
+    (data.weeklySummary || []).forEach(function (t) { moved.appendChild(el('li', '', String(t))); });
+
+    var gbody = document.getElementById('global');
+    REGIONS.forEach(function (region) {
+      var items = globals.filter(function (x) { return x.region === region; });
+      if (!items.length) return;
+      var head = el('tr', 'region');
+      var td = el('td', '', region);
+      td.colSpan = 5;
+      head.appendChild(td);
+      gbody.appendChild(head);
+      items.forEach(function (it) {
+        gbody.appendChild(row([el('td', '', it.name), el('td', '', num(it.last, 2)), pctCell(it.r1w), pctCell(it.r1m), pctCell(it.r1y)]));
+      });
+    });
+
+    var fbody = document.getElementById('funds');
+    (g.funds || []).forEach(function (it) {
+      fbody.appendChild(row([el('td', '', it.category || it.name), pctCell(it.r1w), pctCell(it.r1m), pctCell(it.r3m), pctCell(it.r1y)]));
+    });
+
+    var rbody = document.getElementById('risk');
+    var bySymbol = {};
+    (g.risk || []).forEach(function (it) { bySymbol[it.symbol] = it; });
+    RISK.forEach(function (sym) {
+      var it = bySymbol[sym];
+      if (!it) return;
+      var last = sym === '^TNX' ? (it.last > 20 ? it.last / 10 : it.last).toFixed(2) + '%' : num(it.last, 2);
+      rbody.appendChild(row([el('td', '', it.name), el('td', '', last), pctCell(it.r1w)]));
+    });
+
+    var sbody = document.getElementById('sectors');
+    (g.sectors || []).filter(function (x) { return isNum(x.r1w); })
+      .sort(function (a, b) { return b.r1w - a.r1w; })
+      .forEach(function (it) {
+        sbody.appendChild(row([el('td', '', it.name.replace(/^NIFTY /, '')), pctCell(it.r1w), pctCell(it.r1m)]));
+      });
+    document.body.setAttribute('data-ready', '1');
+  }).catch(function () { document.body.setAttribute('data-ready', 'error'); });
+})();
+</script>
+</body>
+</html>

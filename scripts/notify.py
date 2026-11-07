@@ -8,7 +8,6 @@ import urllib.error
 import urllib.request
 
 TELEGRAM_URL = "https://api.telegram.org/bot{token}/sendMessage"
-PHOTO_URL = "https://api.telegram.org/bot{token}/sendPhoto"
 MAX_LEN = 4000  # Telegram limit 4096
 
 
@@ -59,30 +58,40 @@ def send_telegram(text: str) -> bool:
     return bool(ok)
 
 
-def send_photo(path: str, caption: str) -> bool:
-    """S5: PNG private chat वर पाठवा (multipart, standard library)."""
+def _send_file(method: str, field: str, path: str, filename: str, content_type: str, caption: str) -> bool:
+    """Telegram multipart upload (standard library) — private chat only."""
     creds = _credentials()
     if creds is None:
         return False
     token, chat_id = creds
     boundary = "----gmd" + os.urandom(8).hex()
     with open(path, "rb") as handle:
-        image = handle.read()
+        payload = handle.read()
     parts = []
     for name, value in (("chat_id", chat_id), ("caption", caption[:1000])):
         parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'.encode())
-    parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="photo"; filename="snapshot.png"\r\n'
-                 f"Content-Type: image/png\r\n\r\n".encode() + image + b"\r\n")
+    parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{field}"; filename="{filename}"\r\n'
+                 f"Content-Type: {content_type}\r\n\r\n".encode() + payload + b"\r\n")
     parts.append(f"--{boundary}--\r\n".encode())
     request = urllib.request.Request(
-        PHOTO_URL.format(token=token), data=b"".join(parts),
+        f"https://api.telegram.org/bot{token}/{method}", data=b"".join(parts),
         headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}, method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(request, timeout=60) as response:
             ok = json.loads(response.read().decode("utf-8")).get("ok", False)
     except (urllib.error.URLError, TimeoutError, ValueError) as exc:
-        print(f"ERROR: Telegram photo failed: {type(exc).__name__}", file=sys.stderr)
+        print(f"ERROR: Telegram {method} failed: {type(exc).__name__}", file=sys.stderr)
         return False
-    print("Telegram photo sent" if ok else "ERROR: Telegram returned ok=false")
+    print(f"Telegram {method} done" if ok else "ERROR: Telegram returned ok=false")
     return bool(ok)
+
+
+def send_photo(path: str, caption: str) -> bool:
+    """S5 snapshot: PNG private chat वर."""
+    return _send_file("sendPhoto", "photo", path, "snapshot.png", "image/png", caption)
+
+
+def send_document(path: str, caption: str, filename: str = "document.pdf") -> bool:
+    """S5 weekly recap: PDF private chat वर (तिथून तुम्ही clients ना forward करा)."""
+    return _send_file("sendDocument", "document", path, filename, "application/pdf", caption)

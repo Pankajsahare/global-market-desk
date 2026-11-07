@@ -8,6 +8,7 @@ public/ folder local server वर चालवून widget/snapshot.html headl
 from __future__ import annotations
 
 import argparse
+import contextlib
 import functools
 import http.server
 import shutil
@@ -30,15 +31,16 @@ class _QuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def render(data_file: Path, out: Path) -> None:
-    """Snapshot page + data एका temp folder मध्ये serve करून PNG घ्या."""
+@contextlib.contextmanager
+def serve_and_open(data_file: Path, page_name: str, viewport: tuple[int, int] = (1080, 1350)):
+    """public/widget/<page_name> + data एका temp folder मध्ये serve करून headless browser मध्ये उघडा."""
     from playwright.sync_api import sync_playwright  # workflow मध्येच install होतो
 
     with tempfile.TemporaryDirectory() as tmp:
         site = Path(tmp)
         (site / "widget").mkdir()
         (site / "data").mkdir()
-        shutil.copy(ROOT / "public" / "widget" / "snapshot.html", site / "widget" / "snapshot.html")
+        shutil.copy(ROOT / "public" / "widget" / page_name, site / "widget" / page_name)
         shutil.copy(data_file, site / "data" / "market.json")
 
         handler = functools.partial(_QuietHandler, directory=str(site))
@@ -47,15 +49,21 @@ def render(data_file: Path, out: Path) -> None:
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch()
-                page = browser.new_page(viewport={"width": 1080, "height": 1350})
-                page.goto(f"http://127.0.0.1:{server.server_port}/widget/snapshot.html")
+                page = browser.new_page(viewport={"width": viewport[0], "height": viewport[1]})
+                page.goto(f"http://127.0.0.1:{server.server_port}/widget/{page_name}")
                 page.wait_for_selector("body[data-ready]", timeout=15000)
                 if page.get_attribute("body", "data-ready") != "1":
-                    raise RuntimeError("snapshot page could not load data")
-                page.locator("#snap").screenshot(path=str(out))
+                    raise RuntimeError(f"{page_name} could not load data")
+                yield page
                 browser.close()
         finally:
             server.shutdown()
+
+
+def render(data_file: Path, out: Path) -> None:
+    """S5 daily snapshot PNG."""
+    with serve_and_open(data_file, "snapshot.html") as page:
+        page.locator("#snap").screenshot(path=str(out))
 
 
 def main(argv: list[str] | None = None) -> int:
