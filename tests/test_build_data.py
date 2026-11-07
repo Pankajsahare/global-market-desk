@@ -79,6 +79,17 @@ class BuildDatasetTests(unittest.TestCase):
         self.assertTrue(items["BAD"]["stale"])
         self.assertFalse(items["OK"]["stale"])
 
+    def test_fallback_symbol_used_when_primary_fails(self):
+        config = {"groups": {"funds": [{"symbol": "MAIN", "name": "Main", "category": "Mid Cap",
+                                        "fallbacks": [{"symbol": "ALT", "name": "Alt Index"}]}]}}
+        good = make_result(date(2026, 1, 1), [1.0, 2.0])
+        data, success, _ = build_data.build_dataset(
+            config, {}, fetcher=lambda s: good if s == "ALT" else None, pause=0)
+        item = data["groups"]["funds"][0]
+        self.assertEqual(success, 1)
+        self.assertEqual((item["symbol"], item["sourceSymbol"], item["name"]), ("MAIN", "ALT", "Alt Index"))
+        self.assertEqual(item["category"], "Mid Cap")
+
     def test_main_refuses_to_write_when_most_fail(self):
         import tempfile, json
         with tempfile.TemporaryDirectory() as tmp:

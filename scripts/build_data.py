@@ -161,8 +161,17 @@ def build_dataset(
         items: list[dict[str, Any]] = []
         for cfg in entries:
             total += 1
-            result = fetcher(cfg["symbol"])
-            item = build_item(cfg, result) if result else None
+            item = None
+            # आधी मुख्य symbol, fail झाल्यास "fallbacks" मधले पर्याय क्रमाने
+            for candidate in [cfg] + list(cfg.get("fallbacks") or []):
+                result = fetcher(candidate["symbol"])
+                if result:
+                    item = build_item({**cfg, "name": candidate.get("name", cfg["name"]),
+                                       "symbol": candidate["symbol"]}, result)
+                if item is not None:
+                    item["symbol"] = cfg["symbol"]          # frontend साठी key स्थिर
+                    item["sourceSymbol"] = candidate["symbol"]
+                    break
             if item is not None:
                 success += 1
                 items.append(item)

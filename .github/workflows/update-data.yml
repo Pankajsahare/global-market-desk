@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: "*/15 0-21 * * 1-5"   # UTC; IST = UTC + 5:30
   workflow_dispatch: {}            # Actions tab मधून हाताने चालवण्यासाठी
+  push:                            # config/script बदलल्यावर लगेच नवीन डेटा
+    branches: [main]
+    paths: ["config/**", "scripts/**"]
 
 permissions:
   contents: read

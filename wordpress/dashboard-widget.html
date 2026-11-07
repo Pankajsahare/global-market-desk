@@ -31,7 +31,8 @@
   .gmd__tile-name { font-size:12px; opacity:0.9; }
   .gmd__tile-last { font-size:16px; font-weight:700; }
   .gmd__tile-chg { font-size:13px; font-weight:600; }
-  .gmd table { width:100%; border-collapse:collapse; font-size:13px; min-width:420px; }
+  .gmd table { width:100%; border-collapse:collapse; font-size:13px; min-width:420px; border:0; margin:0; background:transparent; }
+  .gmd table th, .gmd table td { border:0; border-bottom:1px solid var(--line); background:transparent; } /* theme च्या table borders काढा */
   .gmd th { text-align:right; color:var(--muted); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--line); }
   .gmd th:first-child, .gmd td:first-child { text-align:left; }
   .gmd td { text-align:right; padding:7px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
@@ -56,9 +57,9 @@
   <div class="gmd__meta" id="gmd-updated">Loading market data…</div>
   <div class="gmd__banner" id="gmd-stale" hidden></div>
 
-  <!-- Public disclaimer — TODO [मॅन्युअल बदल]: ARN नंबर टाका | न टाकल्यास: disclaimer अपूर्ण -->
+  <!-- Public disclaimer (footer शी जुळणारं नाव व ARN) -->
   <div class="gmd__disc" data-mode="public">
-    <strong>Disclaimer:</strong> Sahare Financial Services is an AMFI-registered Mutual Fund Distributor (ARN-XXXXXX).
+    <strong>Disclaimer:</strong> Sahare Wealth is an AMFI-registered Mutual Fund Distributor (ARN-151469).
     Mutual Fund investments are subject to market risks, read all scheme related documents carefully.
     Market data is delayed, sourced from third parties, and shown for information only. It is not investment advice or a recommendation.
   </div>
