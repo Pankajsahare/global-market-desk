@@ -1,0 +1,46 @@
+{
+  "groups": {
+    "global": [
+      {"symbol": "^NSEI", "name": "NIFTY 50", "region": "India"},
+      {"symbol": "^BSESN", "name": "Sensex", "region": "India"},
+      {"symbol": "^GSPC", "name": "S&P 500", "region": "US"},
+      {"symbol": "^IXIC", "name": "Nasdaq Composite", "region": "US"},
+      {"symbol": "^DJI", "name": "Dow Jones", "region": "US"},
+      {"symbol": "^FTSE", "name": "FTSE 100", "region": "Europe"},
+      {"symbol": "^GDAXI", "name": "DAX", "region": "Europe"},
+      {"symbol": "^FCHI", "name": "CAC 40", "region": "Europe"},
+      {"symbol": "^N225", "name": "Nikkei 225", "region": "Asia"},
+      {"symbol": "^HSI", "name": "Hang Seng", "region": "Asia"},
+      {"symbol": "000001.SS", "name": "Shanghai Composite", "region": "Asia"},
+      {"symbol": "^KS11", "name": "KOSPI", "region": "Asia"}
+    ],
+    "risk": [
+      {"symbol": "^VIX", "name": "CBOE VIX"},
+      {"symbol": "^INDIAVIX", "name": "India VIX"},
+      {"symbol": "DX-Y.NYB", "name": "US Dollar Index"},
+      {"symbol": "^TNX", "name": "US 10Y Yield", "decimals": 3},
+      {"symbol": "GC=F", "name": "Gold"},
+      {"symbol": "BZ=F", "name": "Brent Crude"},
+      {"symbol": "INR=X", "name": "USD/INR"},
+      {"symbol": "ES=F", "name": "S&P 500 Futures"},
+      {"symbol": "NQ=F", "name": "Nasdaq 100 Futures"}
+    ],
+    "sectors": [
+      {"symbol": "^NSEBANK", "name": "NIFTY Bank"},
+      {"symbol": "^CNXIT", "name": "NIFTY IT"},
+      {"symbol": "^CNXPHARMA", "name": "NIFTY Pharma"},
+      {"symbol": "^CNXAUTO", "name": "NIFTY Auto"},
+      {"symbol": "^CNXFMCG", "name": "NIFTY FMCG"},
+      {"symbol": "^CNXMETAL", "name": "NIFTY Metal"},
+      {"symbol": "^CNXREALTY", "name": "NIFTY Realty"},
+      {"symbol": "^CNXENERGY", "name": "NIFTY Energy"},
+      {"symbol": "^CNXPSUBANK", "name": "NIFTY PSU Bank"},
+      {"symbol": "^CNXINFRA", "name": "NIFTY Infra"}
+    ],
+    "funds": [
+      {"symbol": "^CNX100", "name": "NIFTY 100", "category": "Large Cap"},
+      {"symbol": "NIFTY_MIDCAP_100.NS", "name": "NIFTY Midcap 100", "category": "Mid Cap"},
+      {"symbol": "^CNXSC", "name": "NIFTY Smallcap 100", "category": "Small Cap"}
+    ]
+  }
+}

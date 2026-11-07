@@ -1,0 +1,56 @@
+# दर 15 मिनिटांनी (सोम–शुक्र, 05:30–03:30 IST) डेटा बनवून GitHub Pages वर publish करतो.
+name: Update market data
+
+on:
+  schedule:
+    - cron: "*/15 0-21 * * 1-5"   # UTC; IST = UTC + 5:30
+  workflow_dispatch: {}            # Actions tab मधून हाताने चालवण्यासाठी
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: market-data
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # मागचा live डेटा — fail झालेल्या symbols साठी fallback
+      - name: Download previous data
+        run: |
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          NAME="${GITHUB_REPOSITORY#*/}"
+          curl -fsSL "https://${OWNER,,}.github.io/${NAME}/data/market.json" -o previous.json \
+            || echo "{}" > previous.json
+
+      - name: Build market.json
+        run: >
+          python scripts/build_data.py
+          --config config/symbols.json
+          --out public/data/market.json
+          --previous previous.json
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
