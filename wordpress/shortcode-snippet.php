@@ -40,13 +40,25 @@ function gmd_summary_lines(): array {
     return gmd_market_meta()['lines'];
 }
 
-// हे पान public dashboard आहे का (shortcode आहे, private mode नाही)
+// TODO [मॅन्युअल बदल]: public dashboard पानाचा slug | उदा.: 'global-market' (URL मधला शेवटचा भाग)
+//   न बदलल्यास: पान shortcode वरून शोधलं जातं (Elementor data सकट)
+const GMD_PUBLIC_SLUG = 'global-market';  // ← येथे बदला
+
+// हे पान public dashboard आहे का (slug जुळतो, किंवा shortcode आहे आणि private mode नाही)
 function gmd_is_public_dashboard(): bool {
     if (!is_singular()) {
         return false;
     }
-    $content = (string) get_post_field('post_content', get_queried_object_id());
-    return false !== strpos($content, '[gmd_dashboard') && false === strpos($content, 'mode="private"');
+    if (GMD_PUBLIC_SLUG !== '' && is_page(GMD_PUBLIC_SLUG)) {
+        return true;
+    }
+    $id = get_queried_object_id();
+    // Elementor shortcode post_content मध्ये नव्हे तर _elementor_data मध्ये ठेवतो — दोन्ही तपासा
+    $haystack = (string) get_post_field('post_content', $id) . ' ' . (string) get_post_meta($id, '_elementor_data', true);
+    if (false === strpos($haystack, 'gmd_dashboard')) {
+        return false;
+    }
+    return !preg_match('/gmd_dashboard[^\]]*private/i', $haystack);
 }
 
 // Google साठी ~155 अक्षरांचं description (शब्द न तोडता)
