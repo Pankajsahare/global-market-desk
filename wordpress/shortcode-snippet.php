@@ -8,7 +8,8 @@
  * CSS/JS GitHub Pages वरून येतात — त्यामुळे पुढच्या सुधारणा WP मध्ये paste कराव्या लागत नाहीत.
  * S2: "What moved" वाक्यं server-side HTML मध्येही येतात (Google ला दिसतात); JS नंतर तोच भाग नव्याने दाखवतो.
  * S4 (SEO): public dashboard पानावर meta description रोजच्या "What moved" वरून + JSON-LD structured data.
- *           Yoast / Rank Math असल्यास त्यांच्याच description मध्ये भरतो (duplicate meta नाही).
+ *           Yoast / Rank Math असल्यास त्यांच्याच description मध्ये भरतो; इतर (उदा. ThinkRank, WPCode)
+ *           असल्यास त्यांचं description बदलतो — पानावर नेहमी एकच description.
  */
 if (!defined('ABSPATH')) {
     exit; // थेट file उघडल्यास थांबवा
@@ -62,6 +63,20 @@ function gmd_meta_description(): string {
     return $text;
 }
 
+// HTML मधले सगळे <meta name="description"> काढून पहिल्याच्या जागी आमचा एक ठेवा (नसल्यास </head> आधी)
+function gmd_replace_meta_description(string $html, string $desc): string {
+    $tag     = '<meta name="description" content="' . esc_attr($desc) . '">';
+    $pattern = '/<meta\b[^>]*\bname\s*=\s*["\']description["\'][^>]*>\s*/i';
+    $seen    = 0;
+    $html    = preg_replace_callback($pattern, function () use (&$seen, $tag) {
+        return 0 === $seen++ ? $tag . "\n" : '';
+    }, $html);
+    if (0 === $seen) {
+        $html = preg_replace('/<\/head>/i', $tag . "\n</head>", $html, 1);
+    }
+    return $html;
+}
+
 add_action('template_redirect', function () {
     if (!gmd_is_public_dashboard()) {
         return;
@@ -73,9 +88,11 @@ add_action('template_redirect', function () {
         } elseif (class_exists('RankMath')) {
             add_filter('rank_math/frontend/description', function () use ($desc) { return $desc; });
         } else {
-            add_action('wp_head', function () use ($desc) {
-                echo '<meta name="description" content="' . esc_attr($desc) . '">' . "\n";
-            }, 1);
+            // इतर SEO plugin (उदा. ThinkRank) किंवा WPCode चं description असेल तर ते बदला; नसेल तर जोडा.
+            // पानावर नेहमी एकच description राहतो.
+            ob_start(function ($html) use ($desc) {
+                return gmd_replace_meta_description((string) $html, $desc);
+            });
         }
     }
     // Structured data: Google ला पान कशाबद्दल आहे आणि कधी update झालं ते सांगते
