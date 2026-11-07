@@ -21,6 +21,8 @@ advisor4u.in साठी जागतिक बाजाराचा delayed �
 - `region` — फक्त `global` गटासाठी: `India` / `US` / `Europe` / `Asia` (heatmap गट)
 - `category` — फक्त `funds` गटासाठी: कोणत्या fund category चा proxy
 - `decimals` — optional, default 2
+- `minPoints` — optional: इतके daily points नसतील तर `fallbacks` मधला पुढचा symbol वापरा
+- `fallbacks` — optional: `[{"symbol": ..., "name": ...}]` पर्यायी symbols, क्रमाने
 
 नवीन symbol जोडायचा असल्यास योग्य गटात एक ओळ जोडा. Script बदलायची गरज नाही.
 

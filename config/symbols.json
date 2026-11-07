@@ -147,7 +147,8 @@
       {
         "symbol": "^CNX100",
         "name": "NIFTY 100",
-        "category": "Large Cap"
+        "category": "Large Cap",
+        "minPoints": 250
       },
       {
         "symbol": "MID150BEES.NS",
@@ -162,7 +163,8 @@
             "symbol": "^NSEMDCP50",
             "name": "NIFTY Midcap 50"
           }
-        ]
+        ],
+        "minPoints": 250
       },
       {
         "symbol": "HDFCSML250.NS",
@@ -177,7 +179,8 @@
             "symbol": "^CNXSC",
             "name": "NIFTY Smallcap 100"
           }
-        ]
+        ],
+        "minPoints": 250
       }
     ]
   }

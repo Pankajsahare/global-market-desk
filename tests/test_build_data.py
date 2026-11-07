@@ -90,6 +90,18 @@ class BuildDatasetTests(unittest.TestCase):
         self.assertEqual((item["symbol"], item["sourceSymbol"], item["name"]), ("MAIN", "ALT", "Alt Index"))
         self.assertEqual(item["category"], "Mid Cap")
 
+    def test_short_history_primary_replaced_by_longer_fallback(self):
+        config = {"groups": {"funds": [{"symbol": "MAIN", "name": "Main", "minPoints": 250,
+                                        "fallbacks": [{"symbol": "ALT1", "name": "Alt1"},
+                                                      {"symbol": "ALT2", "name": "Alt2"}]}]}}
+        results = {
+            "MAIN": make_result(date(2026, 1, 1), [1.0 + i for i in range(13)]),
+            "ALT1": make_result(date(2025, 1, 1), [1.0 + i for i in range(100)]),
+            "ALT2": make_result(date(2025, 1, 1), [1.0 + i for i in range(60)]),
+        }
+        data, _, _ = build_data.build_dataset(config, {}, fetcher=results.get, pause=0)
+        self.assertEqual(data["groups"]["funds"][0]["sourceSymbol"], "ALT1")  # सर्वात लांब history
+
     def test_main_refuses_to_write_when_most_fail(self):
         import tempfile, json
         with tempfile.TemporaryDirectory() as tmp:

@@ -162,16 +162,26 @@ def build_dataset(
         for cfg in entries:
             total += 1
             item = None
-            # आधी मुख्य symbol, fail झाल्यास "fallbacks" मधले पर्याय क्रमाने
+            best_points = -1
+            min_points = int(cfg.get("minPoints", 2))
+            # आधी मुख्य symbol, मग "fallbacks" क्रमाने. पुरेसा history (minPoints) मिळाला की थांबा;
+            # कोणालाच नाही मिळाला तर सर्वात लांब history असलेला वापरा.
             for candidate in [cfg] + list(cfg.get("fallbacks") or []):
                 result = fetcher(candidate["symbol"])
-                if result:
-                    item = build_item({**cfg, "name": candidate.get("name", cfg["name"]),
-                                       "symbol": candidate["symbol"]}, result)
-                if item is not None:
-                    item["symbol"] = cfg["symbol"]          # frontend साठी key स्थिर
-                    item["sourceSymbol"] = candidate["symbol"]
+                if not result:
+                    continue
+                points = len(parse_series(result))
+                built = build_item({**cfg, "name": candidate.get("name", cfg["name"]),
+                                    "symbol": candidate["symbol"]}, result)
+                if built is None or points <= best_points:
+                    continue
+                built["symbol"] = cfg["symbol"]          # frontend साठी key स्थिर
+                built["sourceSymbol"] = candidate["symbol"]
+                item, best_points = built, points
+                if points >= min_points:
                     break
+                print(f"WARN {candidate['symbol']}: only {points} points (< {min_points}), trying fallback",
+                      file=sys.stderr)
             if item is not None:
                 success += 1
                 items.append(item)
