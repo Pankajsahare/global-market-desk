@@ -57,3 +57,22 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # S5 — सलग 3 failures → Telegram alert; पुन्हा चालू झाल्यावर "recovered"
+  alert:
+    needs: [build, deploy]
+    if: always() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Failure / recovery alert
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          CURRENT_RESULT: ${{ (needs.build.result == 'success' && needs.deploy.result == 'success') && 'success' || 'failure' }}
+        run: python3 scripts/alert.py

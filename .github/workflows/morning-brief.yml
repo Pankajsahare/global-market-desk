@@ -1,0 +1,30 @@
+# S2 — सोम–शुक्र सकाळी ~8:40 IST ला private Telegram chat वर Morning Desk brief.
+name: Morning brief
+
+on:
+  schedule:
+    - cron: "10 3 * * 1-5"   # 03:10 UTC = 08:40 IST (GitHub कधी 5–15 मिनिटं उशिरा चालवतो)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Send brief
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          NAME="${GITHUB_REPOSITORY#*/}"
+          python scripts/morning_brief.py --url "https://${OWNER,,}.github.io/${NAME}/data/market.json"

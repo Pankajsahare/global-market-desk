@@ -37,3 +37,14 @@ advisor4u.in साठी जागतिक बाजाराचा delayed �
 - 50% पेक्षा जास्त symbols fail → नवीन deploy होत नाही, site वर मागचा डेटा राहतो.
 - काही symbols fail → त्यांचा मागचा value `stale: true` सह.
 - Source: Yahoo Finance (unofficial, delayed). For information only; not investment advice.
+
+## Telegram (S2 morning brief + S5 failure alert)
+
+| File | काम |
+|---|---|
+| `scripts/signals.py` | Cue + mood rules (widget मधल्या JS ची Python प्रत — `tests/test_signals.py` दोन्ही जुळतात का तपासतो) |
+| `scripts/morning_brief.py` | सोम–शुक्र ~8:40 IST ला brief (`.github/workflows/morning-brief.yml`) |
+| `scripts/alert.py` | सलग 3 failed updates → alert; पुन्हा चालू झाल्यावर "recovered" |
+
+Repo Secrets लागतात: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` (फक्त तुमचा private chat — public channel नको).
+Message न पाठवता preview: `python scripts/morning_brief.py --file tests/fixtures_market.json --dry-run`
