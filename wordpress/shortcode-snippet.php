@@ -7,7 +7,8 @@
  *
  * CSS/JS GitHub Pages वरून येतात — त्यामुळे पुढच्या सुधारणा WP मध्ये paste कराव्या लागत नाहीत.
  * S2: "What moved" वाक्यं server-side HTML मध्येही येतात (Google ला दिसतात); JS नंतर तोच भाग नव्याने दाखवतो.
- * S4 (SEO): public dashboard पानावर meta description रोजच्या "What moved" वरून + JSON-LD structured data.
+ * S4 (SEO): public dashboard पानावर meta description आणि link preview (og/twitter) रोजच्या "What moved" वरून.
+ *           Structured data ThinkRank देतो — दुसरा WebPage schema इथे मुद्दाम नाही.
  *           Yoast / Rank Math असल्यास त्यांच्याच description मध्ये भरतो; इतर (उदा. ThinkRank, WPCode)
  *           असल्यास त्यांचं description बदलतो — पानावर नेहमी एकच description.
  */
@@ -86,6 +87,10 @@ function gmd_replace_meta_description(string $html, string $desc): string {
     if (0 === $seen) {
         $html = preg_replace('/<\/head>/i', $tag . "\n</head>", $html, 1);
     }
+    // WhatsApp / Facebook / X link preview मध्येही आजचा मजकूर
+    $safe = esc_attr($desc);
+    $html = preg_replace('/(<meta\b[^>]*\bproperty\s*=\s*["\']og:description["\'][^>]*\bcontent\s*=\s*["\'])[^"\']*/i', '${1}' . $safe, $html);
+    $html = preg_replace('/(<meta\b[^>]*\bname\s*=\s*["\']twitter:description["\'][^>]*\bcontent\s*=\s*["\'])[^"\']*/i', '${1}' . $safe, $html);
     return $html;
 }
 
@@ -107,23 +112,6 @@ add_action('template_redirect', function () {
             });
         }
     }
-    // Structured data: Google ला पान कशाबद्दल आहे आणि कधी update झालं ते सांगते
-    add_action('wp_head', function () use ($desc) {
-        $meta = gmd_market_meta();
-        $ld   = array(
-            '@context'    => 'https://schema.org',
-            '@type'       => 'WebPage',
-            'name'        => wp_get_document_title(),
-            'url'         => get_permalink(),
-            'description' => '' !== $desc ? $desc : 'Delayed global and Indian market data for information.',
-            'inLanguage'  => 'en-IN',
-            'publisher'   => array('@type' => 'Organization', 'name' => 'Sahare Wealth', 'url' => home_url('/')),
-        );
-        if (!empty($meta['updated'])) {
-            $ld['dateModified'] = $meta['updated'];
-        }
-        echo '<script type="application/ld+json">' . wp_json_encode($ld) . '</script>' . "\n";
-    }, 20);
 });
 
 add_shortcode('gmd_dashboard', function ($atts) {
