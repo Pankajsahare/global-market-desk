@@ -21,7 +21,7 @@ advisor4u.in साठी जागतिक बाजाराचा delayed �
 | `wordpress/recap-signup-forminator.md` | S1: Weekly recap signup form (Forminator — आधीच installed) |
 | `data-in/index_proxies.json` | S6: invest-core कडून NSE index closes (Midcap 150 / Smallcap 250 / Nifty 100); 7 दिवसांपेक्षा जुना असल्यास Yahoo |
 | `scripts/cue_tracker.py` | S3: सकाळचा cue vs NIFTY opening gap — `public/log/cue-log.json` |
-| `scripts/build_macro.py`, `config/macro.json` | India Macro Snapshot: CPI + GDP (MoSPI API), forex reserves (RBI WSS), repo rate (config) → `public/log/macro.json`; दर शनिवारी 07:23 IST (`macro.yml`) |
+| `scripts/build_macro.py`, `config/macro.json` | India Macro Snapshot: CPI + GDP (MoSPI API), forex reserves (RBI WSS), repo rate (config) → `public/log/macro.json`; रोज 07:23 IST (`macro.yml`); 10Y G-Sec (RBI home), CPI chart वर repo रेषा, नवीन CPI/GDP वर Telegram draft, MPC/FD reminders, weekly recap PDF मध्ये macro पट्टी |
 | `tests/test_build_data.py` | Offline tests: `python -m unittest discover -s tests` |
 
 ## `symbols.json` fields (JSON मध्ये comments चालत नाहीत, म्हणून इथे)
@@ -63,7 +63,7 @@ Message न पाठवता preview: `python scripts/morning_brief.py --file 
 
 ## India Macro Snapshot
 
-- **Repo rate बदलणे (प्रत्येक RBI MPC नंतर):** GitHub → `config/macro.json` → ✏️ → `value` आणि `as_of` (YYYY-MM-DD) बदला → Commit. Push झाल्यावर `macro.yml` आपोआप चालतो आणि site update होते.
+- **Repo rate बदलणे (प्रत्येक RBI MPC नंतर):** GitHub → `config/macro.json` → ✏️ → `value`, `as_of` (YYYY-MM-DD) बदला आणि `history` मध्ये `["तारीख", दर]` जोडा → Commit. दर न बदलल्यास फक्त `as_of`. `mpc_decisions` यादी पुढच्या वर्षासाठी RBI calendar प्रमाणे वाढवा. Push झाल्यावर `macro.yml` आपोआप चालतो आणि site update होते.
 - **FD दर बदलणे (S2, Real FD Return कार्ड):** `config/macro.json` → `fd_rate.value` / `as_of` (SBI च्या साइटवर दर बदलल्यावर). `fd_rate` काढल्यास कार्ड दिसत नाही.
 - CPI chart: 2026 पासून base 2024; त्याआधीचे महिने base 2012 series मधून (S1) — note मध्ये लिहिलेलं असतं.
 - एखादा source बंद असल्यास त्याचा मागचा आकडा `*` सह दिसतो; तिन्ही बंद असल्यास Telegram alert आणि site वर जुनी file.

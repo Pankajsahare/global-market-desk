@@ -1,10 +1,11 @@
-# India Macro Snapshot — दर शनिवारी सकाळी 07:23 IST: CPI, GDP (MoSPI), forex reserves (RBI) → public/log/macro.json
+# India Macro Snapshot — रोज सकाळी 07:23 IST: CPI, GDP (MoSPI), forex reserves + 10Y G-Sec (RBI) → public/log/macro.json
+# नवीन CPI/GDP आला की private Telegram वर client WhatsApp draft; MPC/FD reminders पण इथूनच.
 # Repo rate config/macro.json मधून (प्रत्येक MPC नंतर हाताने बदला). बदल commit झाल्यावर site लगेच redeploy.
 name: Macro snapshot
 
 on:
   schedule:
-    - cron: "53 1 * * 6"     # 01:53 UTC शनिवार = 07:23 IST (शुक्रवारचा RBI WSS आलेला असतो)
+    - cron: "53 1 * * *"     # 01:53 UTC = 07:23 IST, रोज
   workflow_dispatch: {}
   push:                      # repo rate बदलला की लगेच
     branches: [main]
@@ -30,6 +31,9 @@ jobs:
           python-version: "3.12"
 
       - name: Build macro.json
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python scripts/build_macro.py --config config/macro.json --out public/log/macro.json
 
       - name: Commit macro.json

@@ -29,6 +29,10 @@
   tr.region td { font-weight:700; color:#0b1a33; background:#f8fafc; text-align:left; }
   .up { color:#047857; } .down { color:#b91c1c; }
   .note { font-size:9.5px; color:#6b7280; margin-top:4px; }
+  .macro { display:grid; grid-template-columns:repeat(6, 1fr); gap:6px; }
+  .macro div { border:1px solid #e5e7eb; border-radius:6px; padding:5px 7px; }
+  .macro b { display:block; font-size:14px; color:#0b1a33; }
+  .macro span { display:block; font-size:9px; color:#6b7280; }
   .foot { margin-top:auto; padding-top:8px; border-top:1px solid #d1d5db; font-size:9.5px; color:#4b5563; line-height:1.5; }
   .foot b { color:#111827; }
 </style>
@@ -45,6 +49,12 @@
 
   <h2>The week in brief</h2>
   <ul class="moved" id="moved"></ul>
+
+  <div id="macro-block" hidden>
+    <h2>India macro snapshot</h2>
+    <div class="macro" id="macro"></div>
+    <div class="note">Sources: RBI and MoSPI. Each figure shows its own reference period. Real FD return = FD rate minus CPI inflation, before tax.</div>
+  </div>
 
   <h2>World markets</h2>
   <table><thead><tr><th>Index</th><th>Close</th><th>1 week</th><th>1 month</th><th>1 year</th></tr></thead>
@@ -91,6 +101,26 @@
   function num(v, d) { return isNum(v) ? v.toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d }) : '—'; }
   function pctCell(v) { return el('td', isNum(v) ? (v >= 0 ? 'up' : 'down') : '', pct(v)); }
   function row(cells) { var tr = el('tr'); cells.forEach(function (c) { tr.appendChild(c); }); return tr; }
+
+  // India macro (log/macro.json) — मिळाला नाही तरी recap बनतो
+  var MACRO_URL = new URLSearchParams(location.search).get('macro') || '../log/macro.json';
+  var macroReady = fetch(MACRO_URL).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+    .then(function (m) {
+      if (!m || !m.repo) return;
+      var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      function when(p) { var q = String(p || '').split('-'); return q.length >= 2 ? (q[2] ? +q[2] + ' ' : '') + MON[+q[1] - 1] + ' ' + q[0] : String(p || ''); }
+      var box = document.getElementById('macro');
+      function tile(name, value, sub) {
+        var d = el('div'); d.appendChild(el('span', '', name)); d.appendChild(el('b', '', value)); d.appendChild(el('span', '', sub)); box.appendChild(d);
+      }
+      tile('Repo rate', m.repo.value.toFixed(2) + '%', 'since ' + when(m.repo.as_of));
+      if (m.cpi) tile('CPI inflation', m.cpi.value.toFixed(2) + '%', when(m.cpi.period));
+      if (m.gdp) tile('Real GDP growth', m.gdp.value.toFixed(1) + '%', m.gdp.period);
+      if (m.forex) tile('Forex reserves', 'US$ ' + m.forex.value.toFixed(0) + ' bn', when(m.forex.as_of));
+      if (m.gsec) tile('10Y G-Sec yield', m.gsec.value.toFixed(2) + '%', when(m.gsec.as_of));
+      if (m.real_return) tile('Real FD return', (m.real_return.value >= 0 ? '+' : '') + m.real_return.value.toFixed(2) + '%', 'FD ' + m.real_return.fd.toFixed(2) + '% \u2212 CPI');
+      document.getElementById('macro-block').hidden = false;
+    });
 
   fetch(DATA_URL).then(function (r) { return r.json(); }).then(function (data) {
     var g = data.groups || {};
@@ -140,7 +170,7 @@
       .forEach(function (it) {
         sbody.appendChild(row([el('td', '', it.name.replace(/^NIFTY /, '')), pctCell(it.r1w), pctCell(it.r1m)]));
       });
-    document.body.setAttribute('data-ready', '1');
+    return macroReady.then(function () { document.body.setAttribute('data-ready', '1'); });
   }).catch(function () { document.body.setAttribute('data-ready', 'error'); });
 })();
 </script>

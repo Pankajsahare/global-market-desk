@@ -19,6 +19,10 @@ WSS_PAGE = """<html><body><table><tr><td>Foreign Exchange Reserves*</td></tr>
 </table></body></html>"""
 
 
+HOME_PAGE = """<div>Market Trends Government Securities Market 6.20% GS 2029 : 6.9581% # 6.53% GS 2031 : 7.0231% #
+6.94% GS 2036 : 7.1620% # 7.06% GS 2041 : 7.3432% # 91 day T-bills : 5.8970%* # as on November 05, 2026 Capital Market</div>"""
+
+
 def cpi_row(year, month, inflation, sector="Combined", division="CPI (General)"):
     return {"year": str(year), "month": month, "state": "All India", "sector": sector,
             "division": division, "inflation": inflation}
@@ -53,6 +57,10 @@ def fake_get(fail=()):
                     {"year": "2025-26", "quarter": "Q4", "constant_price": "8.6"},
                     {"year": "2025-26", "quarter": "Q1", "constant_price": "6.9"}]
             return json.dumps({"data": rows})
+        if "home.aspx" in url:
+            if "gsec" in fail:
+                raise OSError("down")
+            return HOME_PAGE
         if "Wss" in url:
             if "forex" in fail:
                 raise OSError("down")
@@ -73,6 +81,7 @@ class BuildTests(unittest.TestCase):
                          [["2025-11", 0.71], ["2025-12", 1.33], ["2026-08", 5.1], ["2026-09", 5.54]])
         self.assertEqual(out["cpi"]["base_2012_until"], "2025-12")
         self.assertEqual(out["real_return"]["value"], 0.86)
+        self.assertEqual((out["gsec"]["value"], out["gsec"]["bond"]), (7.16, "6.94% GS 2036"))
         self.assertEqual((out["gdp"]["value"], out["gdp"]["period"]), (7.8, "Q1 FY26-27"))
         self.assertEqual(out["gdp"]["history"][0][0], "Q1 FY25-26")
         self.assertEqual((out["forex"]["value"], out["forex"]["as_of"], out["forex"]["change_week"]),
@@ -96,6 +105,35 @@ class BuildTests(unittest.TestCase):
         forex = build_macro.fetch_forex(fake_get(), previous, NOW, 52, lambda _: None)
         self.assertEqual(forex["history"][-1], ["2026-10-30", 717.06])
         self.assertLessEqual(len(forex["history"]), 52)
+
+
+class ExtraTests(unittest.TestCase):
+    def test_gsec_picks_ten_year_bond(self):
+        self.assertEqual(build_macro.parse_gsec(HOME_PAGE, 2026), ("2026-11-05", "6.94% GS 2036", 7.162))
+
+    def test_repo_line_follows_changes(self):
+        history = [["2025-06-06", 5.5], ["2025-12-05", 5.25], ["2026-10-07", 5.5]]
+        self.assertEqual([build_macro.repo_on(history, p) for p in ("2025-05", "2025-11", "2025-12", "2026-10")],
+                         [None, 5.5, 5.25, 5.5])
+
+    def test_cpi_release_alert_with_draft(self):
+        prev = {"cpi": {"value": 4.83, "period": "2026-08"}}
+        out = {"cpi": {"value": 5.54, "period": "2026-09"}, "real_return": {"fd": 6.4, "value": 0.86}}
+        msgs = build_macro.release_alerts(prev, out)
+        self.assertEqual(len(msgs), 1)
+        self.assertIn("September 2026", msgs[0])
+        self.assertIn("+0.86%", msgs[0])
+        self.assertEqual(build_macro.release_alerts(out, out), [])
+
+    def test_mpc_reminder_weekly_after_three_days(self):
+        cfg = {"repo_rate": {"as_of": "2026-10-07"}, "mpc_decisions": ["2026-10-07", "2026-12-04"]}
+        on = lambda d: build_macro.reminders(cfg, datetime.fromisoformat(d))
+        self.assertEqual(on("2026-12-06"), [])
+        self.assertEqual(len(on("2026-12-07")), 1)
+        self.assertEqual(on("2026-12-08"), [])
+        self.assertEqual(len(on("2026-12-14")), 1)
+        cfg["repo_rate"]["as_of"] = "2026-12-04"
+        self.assertEqual(on("2026-12-07"), [])
 
 
 class ParseWssTests(unittest.TestCase):

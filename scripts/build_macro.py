@@ -28,7 +28,7 @@ RBI_WSS = "https://www.rbi.org.in/Scripts/BS_viewWssExtract.aspx"
 MONTHS = ["January", "February", "March", "April", "May", "June", "July",
           "August", "September", "October", "November", "December"]
 # अशक्य आकडा आला तर तो source चुकला असं मानतो
-LIMITS = {"repo": (2.0, 12.0), "cpi": (-5.0, 25.0), "gdp": (-30.0, 30.0), "forex": (300.0, 1500.0)}
+LIMITS = {"gsec": (2.0, 15.0), "repo": (2.0, 12.0), "cpi": (-5.0, 25.0), "gdp": (-30.0, 30.0), "forex": (300.0, 1500.0)}
 
 # TLS verification चालू; MoSPI/RBI च्या जुन्या servers साठी फक्त legacy renegotiation परवानगी
 _CTX = ssl.create_default_context()
@@ -224,6 +224,94 @@ def fetch_forex(get: Fetch, previous: dict[str, Any], today: datetime, weeks: in
             "source": "RBI Weekly Statistical Supplement", "history": [[d, v] for d, v in ordered]}
 
 
+# ---------- 10-year G-Sec (S5) ----------
+RBI_HOME = "https://www.rbi.org.in/home.aspx"
+_GSEC = re.compile(r"(\d+\.\d+)% GS (\d{4}) : (\d+\.\d+)%")
+
+
+def parse_gsec(html: str, year: int) -> tuple[str, str, float] | None:
+    """RBI home "Market Trends" मधून ~10 वर्षांचा benchmark bond: (तारीख, bond नाव, yield %)."""
+    text = re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", html)))
+    start = text.find("Government Securities Market")
+    if start < 0:
+        return None
+    block = text[start:start + 600]
+    bonds = [(abs(int(maturity) - (year + 10)), f"{coupon}% GS {maturity}", float(rate))
+             for coupon, maturity, rate in _GSEC.findall(block)]
+    if not bonds:
+        return None
+    dates = re.findall(r"as on ([A-Z][a-z]+\.? \d{1,2}, \d{4})", block)
+    _, name, rate = min(bonds)
+    return (_wss_day(dates[0]) if dates else None) or "", name, rate
+
+
+def fetch_gsec(get: Fetch, previous: dict[str, Any], today: datetime, keep: int = 260) -> dict[str, Any]:
+    parsed = parse_gsec(get(RBI_HOME, None), today.year)
+    if not parsed:
+        raise ValueError("no G-Sec table")
+    day, name, rate = parsed
+    day = day or today.date().isoformat()
+    _check("gsec", rate)
+    history = {d: v for d, v in (previous.get("history") or [])}
+    history[day] = round(rate, 4)
+    ordered = sorted(history.items())[-keep:]
+    week_ago = [v for d, v in ordered if d <= (datetime.fromisoformat(day) - timedelta(days=7)).date().isoformat()]
+    return {"value": round(rate, 2), "bond": name, "as_of": day, "source": "RBI (Market Trends)",
+            "change_week_bp": round((rate - week_ago[-1]) * 100) if week_ago else None,
+            "history": [[d, v] for d, v in ordered]}
+
+
+# ---------- repo line (S2) ----------
+def repo_on(history: list[list[Any]], period: str) -> float | None:
+    """त्या महिन्याच्या शेवटी लागू repo rate (history = [[YYYY-MM-DD, दर], ...])."""
+    month_end = period + "-31"
+    rates = [float(v) for d, v in sorted(history or []) if str(d) <= month_end]
+    return rates[-1] if rates else None
+
+
+# ---------- alerts (S1, S4) ----------
+def release_alerts(previous: dict[str, Any], out: dict[str, Any]) -> list[str]:
+    """नवीन CPI / GDP आकडा आला की private Telegram साठी संदेश + client WhatsApp draft (English)."""
+    msgs = []
+    old, new = previous.get("cpi") or {}, out.get("cpi") or {}
+    if old.get("period") and new.get("period", "") > old["period"] and not new.get("stale"):
+        month = datetime.strptime(new["period"], "%Y-%m").strftime("%B %Y")
+        move = "up from" if new["value"] > old.get("value", new["value"]) else "down from"
+        real = out.get("real_return")
+        draft = (f"India's retail inflation (CPI) for {month} came in at {new['value']:.2f}%, {move} {old.get('value', 0):.2f}% "
+                 f"the month before. ")
+        if real:
+            draft += (f"At today's bank FD rates of about {real['fd']:.2f}%, the return after inflation is roughly "
+                      f"{real['value']:+.2f}% before tax. ")
+        draft += "Want to review how your savings are placed? Reply here or visit https://www.advisor4u.in/global-market/"
+        msgs.append(f"📊 CPI released: {new['value']:.2f}% ({month})\n\nClient WhatsApp draft (review before sending):\n{draft}")
+    old, new = previous.get("gdp") or {}, out.get("gdp") or {}
+    if old.get("period") and new.get("period") != old["period"] and not new.get("stale"):
+        draft = (f"India's real GDP grew {new['value']:.1f}% in {new['period']}, compared with {old.get('value', 0):.1f}% "
+                 f"in {old['period']}. See the full India macro snapshot: https://www.advisor4u.in/global-market/")
+        msgs.append(f"📈 GDP released: {new['value']:.1f}% ({new['period']})\n\nClient WhatsApp draft (review before sending):\n{draft}")
+    return msgs
+
+
+def reminders(config: dict[str, Any], today: datetime) -> list[str]:
+    """MPC नंतर repo rate बदलायचा राहिला / FD दर जुना → आठवड्यातून एकदा आठवण."""
+    msgs, day = [], today.date()
+    repo_as_of = str(config["repo_rate"].get("as_of", ""))
+    held = [d for d in config.get("mpc_decisions", []) if d <= day.isoformat()]
+    if held and repo_as_of < held[-1]:
+        since = (day - datetime.fromisoformat(held[-1]).date()).days
+        if since >= 3 and (since - 3) % 7 == 0:
+            msgs.append(f"⏰ RBI MPC decision was on {held[-1]}. Please update repo_rate (value, as_of, history) in "
+                        "global-market-desk/config/macro.json. If the rate was unchanged, just set as_of to the MPC date.")
+    fd = config.get("fd_rate") or {}
+    if fd.get("as_of"):
+        age = (day - datetime.fromisoformat(fd["as_of"]).date()).days
+        if age >= 60 and (age - 60) % 14 == 0:
+            msgs.append(f"⏰ FD rate on the site ({fd.get('label', 'FD')} {fd.get('value')}%) was last checked {age} days ago. "
+                        "Check sbi.co.in and update fd_rate in config/macro.json (set as_of even if unchanged).")
+    return msgs
+
+
 # ---------- assemble ----------
 def build(get: Fetch, config: dict[str, Any], previous: dict[str, Any], now: datetime,
           pause: Callable[[float], None] = time.sleep) -> tuple[dict[str, Any], list[str]]:
@@ -239,6 +327,7 @@ def build(get: Fetch, config: dict[str, Any], previous: dict[str, Any], now: dat
         "cpi": lambda: fetch_cpi(get, now, int(config.get("cpi_months", 24))),
         "gdp": lambda: fetch_gdp(get),
         "forex": lambda: fetch_forex(get, previous.get("forex") or {}, now, int(config.get("forex_weeks", 52)), pause),
+        "gsec": lambda: fetch_gsec(get, previous.get("gsec") or {}, now),
     }
     for key, job in jobs.items():
         try:
@@ -248,6 +337,9 @@ def build(get: Fetch, config: dict[str, Any], previous: dict[str, Any], now: dat
             failed.append(key)
             if previous.get(key):
                 out[key] = {**previous[key], "stale": True}
+    # CPI chart वर repo rate ची रेषा: प्रत्येक CPI महिन्याला लागू repo
+    if out.get("cpi") and repo.get("history"):
+        out["cpi"]["repo"] = [repo_on(repo["history"], period) for period, _ in out["cpi"]["history"]]
     # S2: real return = FD दर − CPI महागाई (दोन्ही ताजे असतील तेव्हाच)
     if out.get("fd") and out.get("cpi"):
         out["real_return"] = {"value": round(out["fd"]["value"] - out["cpi"]["value"], 2),
@@ -264,13 +356,25 @@ def main() -> int:
     config = json.loads(Path(args.config).read_text(encoding="utf-8"))
     out_path = Path(args.out)
     previous = json.loads(out_path.read_text(encoding="utf-8")) if out_path.exists() else {}
-    snapshot, failed = build(http_get, config, previous, datetime.now(timezone.utc))
-    if len(failed) == 3:
+    now = datetime.now(timezone.utc)
+    snapshot, failed = build(http_get, config, previous, now)
+    if len(failed) == 4:
         print("ERROR: all macro sources failed; keeping previous file", file=sys.stderr)
         return 1
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(snapshot, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"macro.json written; failed: {failed or 'none'}")
+    messages = release_alerts(previous, snapshot) + reminders(config, now + timedelta(hours=5, minutes=30))
+    same = {k: v for k, v in snapshot.items() if k != "updated"} == {k: v for k, v in previous.items() if k != "updated"}
+    if same:
+        print("macro.json unchanged")
+    else:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(snapshot, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"macro.json written; failed: {failed or 'none'}")
+    if messages:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from notify import send_telegram  # private chat only
+
+        for text in messages:
+            send_telegram(text)
     return 0
 
 

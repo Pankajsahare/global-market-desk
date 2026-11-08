@@ -2,7 +2,33 @@
   "repo_rate": {
     "value": 5.5,
     "as_of": "2026-10-07",
-    "source": "RBI Monetary Policy Committee"
+    "source": "RBI Monetary Policy Committee",
+    "history": [
+      [
+        "2023-02-08",
+        6.5
+      ],
+      [
+        "2025-02-07",
+        6.25
+      ],
+      [
+        "2025-04-09",
+        6.0
+      ],
+      [
+        "2025-06-06",
+        5.5
+      ],
+      [
+        "2025-12-05",
+        5.25
+      ],
+      [
+        "2026-10-07",
+        5.5
+      ]
+    ]
   },
   "cpi_months": 24,
   "forex_weeks": 52,
@@ -11,5 +37,13 @@
     "label": "SBI FD, 2 to 3 years",
     "as_of": "2026-11-08",
     "source": "SBI retail term deposit rates"
-  }
+  },
+  "mpc_decisions": [
+    "2026-04-08",
+    "2026-06-05",
+    "2026-08-05",
+    "2026-10-07",
+    "2026-12-04",
+    "2027-02-05"
+  ]
 }

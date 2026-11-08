@@ -42,6 +42,10 @@ def serve_and_open(data_file: Path, page_name: str, viewport: tuple[int, int] = 
         (site / "data").mkdir()
         shutil.copy(ROOT / "public" / "widget" / page_name, site / "widget" / page_name)
         shutil.copy(data_file, site / "data" / "market.json")
+        macro = ROOT / "public" / "log" / "macro.json"   # weekly recap मधील India macro (repo मध्ये committed)
+        if macro.exists():
+            (site / "log").mkdir()
+            shutil.copy(macro, site / "log" / "macro.json")
 
         handler = functools.partial(_QuietHandler, directory=str(site))
         server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)

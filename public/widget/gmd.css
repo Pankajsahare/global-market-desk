@@ -83,7 +83,7 @@
 @media print { #gmd-root .gmd__signup { display:none !important; } }
 
 /* India Macro Snapshot */
-.gmd__macro-tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-bottom:16px; }
+.gmd__macro-tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(145px, 1fr)); gap:10px; margin-bottom:16px; }
 .gmd__macro-tile { background:#0b1f3a; border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
 .gmd__macro-name { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
 .gmd__macro-value { font-size:24px; font-weight:700; margin:2px 0; }
@@ -95,6 +95,9 @@
 .gmd__macro-svg { width:100%; height:auto; display:block; }
 .gmd__macro-line { fill:none; stroke:#f2b134; stroke-width:2; }
 .gmd__macro-dot { fill:#f2b134; }
+.gmd__macro-line2 { fill:none; stroke:#60a5fa; stroke-width:1.5; stroke-dasharray:4 3; }
+.gmd__macro-key { font-size:11px; color:#f2b134; white-space:nowrap; margin-left:6px; }
+.gmd__macro-key--repo { color:#60a5fa; }
 .gmd__macro-grid { stroke:var(--line); stroke-width:1; }
 .gmd__macro-axis { fill:var(--muted); font-size:10px; }
 @media (max-width:480px) { .gmd__macro-tiles { grid-template-columns:repeat(2, 1fr); } .gmd__macro-value { font-size:20px; } }

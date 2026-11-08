@@ -66,7 +66,7 @@
     <h3>India Macro Snapshot</h3>
     <div class="gmd__macro-tiles" id="gmd-macro-tiles"></div>
     <div class="gmd__grid2 gmd__macro-charts">
-      <div><div class="gmd__macro-chart-title">CPI inflation, % (year on year)</div><div id="gmd-macro-cpi"></div></div>
+      <div><div class="gmd__macro-chart-title">CPI inflation, % (year on year) <span class="gmd__macro-key">\u2014 CPI</span> <span class="gmd__macro-key gmd__macro-key--repo">\u2014 Repo rate</span></div><div id="gmd-macro-cpi"></div></div>
       <div><div class="gmd__macro-chart-title">Forex reserves, US$ billion (weekly)</div><div id="gmd-macro-fx"></div></div>
     </div>
     <div class="gmd__note" id="gmd-macro-note"></div>
@@ -578,17 +578,20 @@
   }
 
   // Axis सह छोटा line chart (SVG) — [[label, value], ...]
-  function lineChart(points, unit) {
+  // overlay (optional) = points शी जुळणारी दुसरी रेषा (उदा. repo rate), step स्वरूपात
+  function lineChart(points, unit, overlay) {
     var ns = 'http://www.w3.org/2000/svg';
     var w = 320, h = 120, padL = 34, padB = 18, padT = 8;
-    var pts = (points || []).filter(function (p) { return p && isNum(p[1]); });
+    var pts = (points || []).map(function (p, i) { return p && [p[0], p[1], overlay ? overlay[i] : null]; })
+      .filter(function (p) { return p && isNum(p[1]); });
     var svg = document.createElementNS(ns, 'svg');
     svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
     svg.setAttribute('class', 'gmd__macro-svg');
     svg.setAttribute('role', 'img');
     if (pts.length < 2) return svg;
     var vals = pts.map(function (p) { return p[1]; });
-    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    var both = vals.concat(pts.map(function (p) { return p[2]; }).filter(isNum));
+    var min = Math.min.apply(null, both), max = Math.max.apply(null, both);
     var pad = (max - min) * 0.1 || 1;
     min -= pad; max += pad;
     function x(i) { return padL + i / (pts.length - 1) * (w - padL - 4); }
@@ -609,6 +612,18 @@
       svg.appendChild(g);
       text(padL - 4, y(v) + 3, v.toFixed(unit === '%' ? 1 : 0), 'end');
     });
+    var steps = [];
+    pts.forEach(function (p, i) {
+      if (!isNum(p[2])) return;
+      if (steps.length) steps.push(x(i).toFixed(1) + ',' + steps[steps.length - 1].split(',')[1]);
+      steps.push(x(i).toFixed(1) + ',' + y(p[2]).toFixed(1));
+    });
+    if (steps.length > 1) {
+      var repoLine = document.createElementNS(ns, 'polyline');
+      repoLine.setAttribute('points', steps.join(' '));
+      repoLine.setAttribute('class', 'gmd__macro-line2');
+      svg.appendChild(repoLine);
+    }
     var line = document.createElementNS(ns, 'polyline');
     line.setAttribute('points', pts.map(function (p, i) { return x(i).toFixed(1) + ',' + y(p[1]).toFixed(1); }).join(' '));
     line.setAttribute('class', 'gmd__macro-line');
@@ -649,10 +664,13 @@
       tile.classList.add(rr >= 0 ? 'is-up' : 'is-down');
       tiles.appendChild(tile);
     }
-    $('gmd-macro-cpi').appendChild(lineChart(m.cpi && m.cpi.history, '%'));
+    add(m.gsec, '10Y G-Sec Yield', m.gsec && fmt(m.gsec.value, 2) + '%',
+      m.gsec && (m.gsec.bond + ' \u00b7 ' + periodText(m.gsec.as_of) +
+        (isNum(m.gsec.change_week_bp) ? ' \u00b7 ' + (m.gsec.change_week_bp >= 0 ? '+' : '\u2212') + Math.abs(m.gsec.change_week_bp) + ' bp wk' : '')));
+    $('gmd-macro-cpi').appendChild(lineChart(m.cpi && m.cpi.history, '%', m.cpi && m.cpi.repo));
     $('gmd-macro-fx').appendChild(lineChart(m.forex && m.forex.history, 'bn'));
-    $('gmd-macro-note').textContent = 'Sources: RBI (repo rate, Weekly Statistical Supplement) and MoSPI (CPI base 2024, GDP base 2022-23). ' +
-      'Updated weekly; each figure shows its own reference period.' +
+    $('gmd-macro-note').textContent = 'Sources: RBI (repo rate, Weekly Statistical Supplement, G-Sec market trends) and MoSPI (CPI base 2024, GDP base 2022-23). ' +
+      'Checked daily; each figure shows its own reference period.' +
       (m.cpi && m.cpi.base_2012_until ? ' CPI up to ' + periodText(m.cpi.base_2012_until) + ' is from the older base-2012 series.' : '') +
       (m.fd ? ' Real FD return = ' + (m.fd.label || 'bank FD') + ' rate minus latest CPI inflation, before tax; illustrative only.' : '') +
       (anyStale ? ' * Latest update failed; previous value shown.' : '');
