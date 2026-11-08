@@ -23,10 +23,11 @@ def get(url, params=None):
 
 B = "https://api.mospi.gov.in"
 status, body = get("https://www.rbi.org.in/Scripts/BS_ViewWssExtract.aspx")
-hrefs = re.findall(r"href=[\"']([^\"']+)", body, re.I)
-print("n", len(hrefs))
-for h in hrefs:
-    if "aspx" in h.lower() and ("wss" in h.lower() or "id=" in h.lower()):
-        print(h)
-i = body.lower().find("oct")
-print(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " | ", body[body.lower().find("<form"):]))[:3000])
+dates = re.findall(r"SelectedDate=([0-9/]+)", body)
+print("dates", dates)
+for d in dates[:2]:
+    st, page = get("https://www.rbi.org.in/Scripts/BS_viewWssExtract.aspx", {"SelectedDate": d})
+    m = re.search(r"Foreign Exchange Reserves", page, re.I)
+    print("##", d, st, len(page), bool(m))
+    if m:
+        print(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", page[m.start():m.start() + 2500]))[:500])
