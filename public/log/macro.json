@@ -1,9 +1,15 @@
 {
- "updated": "2026-11-08T15:39:35Z",
+ "updated": "2026-11-08T16:02:00Z",
  "repo": {
   "value": 5.5,
   "as_of": "2026-10-07",
   "source": "RBI Monetary Policy Committee"
+ },
+ "fd": {
+  "value": 6.4,
+  "label": "SBI FD, 2 to 3 years",
+  "as_of": "2026-11-08",
+  "source": "SBI retail term deposit rates"
  },
  "cpi": {
   "value": 5.54,
@@ -46,7 +52,8 @@
     "2026-09",
     5.54
    ]
-  ]
+  ],
+  "stale": true
  },
  "gdp": {
   "value": 7.8,
@@ -302,5 +309,11 @@
     717.06
    ]
   ]
+ },
+ "real_return": {
+  "value": 0.86,
+  "fd": 6.4,
+  "cpi": 5.54,
+  "cpi_period": "2026-09"
  }
 }
