@@ -22,18 +22,11 @@ def get(url, params=None):
 
 
 B = "https://api.mospi.gov.in"
-TESTS = [
-    ("wss list", "https://www.rbi.org.in/Scripts/BS_ViewWssExtract.aspx", None),
-    ("wss 63777", "https://www.rbi.org.in/Scripts/BS_ViewWssExtractdetails.aspx", {"id": "63777"}),
-]
-
-for name, url, params in TESTS:
-    status, body = get(url, params)
-    print(f"### {name} -> {status} len={len(body)}")
-    print("links:", sorted(set(re.findall(r"WssExtractdetails\.aspx\?id=(\d+)", body, re.I)))[-8:])
-    for m in re.finditer(r"Foreign Exchange Reserves", body, re.I):
-        text = re.sub(r"<[^>]+>", " ", body[m.start():m.start() + 4000])
-        print(re.sub(r"\s+", " ", text)[:900])
-        break
-    titles = re.findall(r"<title>(.*?)</title>", body, re.S | re.I)
-    print("title:", titles[:1])
+status, body = get("https://www.rbi.org.in/Scripts/BS_ViewWssExtract.aspx")
+hrefs = re.findall(r"href=[\"']([^\"']+)", body, re.I)
+print("n", len(hrefs))
+for h in hrefs:
+    if "aspx" in h.lower() and ("wss" in h.lower() or "id=" in h.lower()):
+        print(h)
+i = body.lower().find("oct")
+print(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " | ", body[body.lower().find("<form"):]))[:3000])
