@@ -16,7 +16,7 @@ jobs:
           import re, sys
           sys.path.insert(0, "scripts")
           import build_macro as bm
-          page = bm.http_get(bm.RBI_WSS, {"SelectedDate": "11/06/2026"})
+          page = bm.http_get("https://www.rbi.org.in/Scripts/BS_NSDPDisplay.aspx?param=4") + bm.http_get("https://www.rbi.org.in/home.aspx")
           text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", page))
           for m in re.finditer(r"(?i)yield|10-year|10 year|G-Sec|Government Securit", text):
               print("..", text[max(0, m.start() - 150):m.start() + 350])
