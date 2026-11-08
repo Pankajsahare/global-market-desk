@@ -5,11 +5,28 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - run: |
-          curl -sSL -A "Mozilla/5.0" "https://www.advisor4u.in/global-market/?nocache=$RANDOM" -D headers.txt -o page.html
-          grep -i -E "^(cache|x-|age|server|cf-)" headers.txt || true
-          grep -o -i -E "<script[^>]*(gmd|github\.io)[^>]*>|<link[^>]*(gmd|github\.io)[^>]*>|<div[^>]*gmd-root[^>]*>|gmd_dashboard|India Macro" page.html | head -20
-          grep -o -i -E "litespeed[^\"' ]{0,60}|<!-- [^>]{0,120}-->" page.html | tail -8
-          grep -c "github.io/global-market-desk" page.html || true
+          npm i -s playwright@1.49.1 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
+          cat > shot.js <<'JS'
+          const { chromium } = require('playwright');
+          (async () => {
+            const b = await chromium.launch();
+            const p = await b.newPage({ viewport: { width: 1200, height: 900 } });
+            p.on('console', m => console.log('console:', m.type(), m.text()));
+            p.on('requestfailed', r => console.log('failed:', r.url()));
+            await p.goto('https://www.advisor4u.in/global-market/', { waitUntil: 'networkidle', timeout: 90000 });
+            await p.mouse.move(200, 400); await p.mouse.wheel(0, 800);
+            await p.waitForTimeout(8000);
+            const info = await p.evaluate(() => {
+              const m = document.getElementById('gmd-macro');
+              const r = document.getElementById('gmd-root');
+              return { root: !!r, ready: r && r.getAttribute('data-gmd-ready'), macro: !!m, hidden: m ? m.hidden : null,
+                       tiles: m ? m.innerText.slice(0, 200) : null };
+            });
+            console.log(JSON.stringify(info));
+            await b.close();
+          })();
+          JS
+          node shot.js
