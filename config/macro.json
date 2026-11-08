@@ -1,0 +1,9 @@
+{
+  "repo_rate": {
+    "value": 5.50,
+    "as_of": "2026-10-07",
+    "source": "RBI Monetary Policy Committee"
+  },
+  "cpi_months": 24,
+  "forex_weeks": 52
+}

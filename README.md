@@ -21,6 +21,7 @@ advisor4u.in साठी जागतिक बाजाराचा delayed �
 | `wordpress/recap-signup-forminator.md` | S1: Weekly recap signup form (Forminator — आधीच installed) |
 | `data-in/index_proxies.json` | S6: invest-core कडून NSE index closes (Midcap 150 / Smallcap 250 / Nifty 100); 7 दिवसांपेक्षा जुना असल्यास Yahoo |
 | `scripts/cue_tracker.py` | S3: सकाळचा cue vs NIFTY opening gap — `public/log/cue-log.json` |
+| `scripts/build_macro.py`, `config/macro.json` | India Macro Snapshot: CPI + GDP (MoSPI API), forex reserves (RBI WSS), repo rate (config) → `public/log/macro.json`; दर शनिवारी 07:23 IST (`macro.yml`) |
 | `tests/test_build_data.py` | Offline tests: `python -m unittest discover -s tests` |
 
 ## `symbols.json` fields (JSON मध्ये comments चालत नाहीत, म्हणून इथे)
@@ -59,3 +60,9 @@ advisor4u.in साठी जागतिक बाजाराचा delayed �
 
 Repo Secrets लागतात: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` (फक्त तुमचा private chat — public channel नको).
 Message न पाठवता preview: `python scripts/morning_brief.py --file tests/fixtures_market.json --dry-run`
+
+## India Macro Snapshot
+
+- **Repo rate बदलणे (प्रत्येक RBI MPC नंतर):** GitHub → `config/macro.json` → ✏️ → `value` आणि `as_of` (YYYY-MM-DD) बदला → Commit. Push झाल्यावर `macro.yml` आपोआप चालतो आणि site update होते.
+- एखादा source बंद असल्यास त्याचा मागचा आकडा `*` सह दिसतो; तिन्ही बंद असल्यास Telegram alert आणि site वर जुनी file.
+- Widget card "What Moved" खाली आहे; `public/widget/gmd.js` मधील `renderMacro`.

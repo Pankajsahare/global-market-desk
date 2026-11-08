@@ -13,6 +13,7 @@
   var BASE_URL = 'https://pankajsahare.github.io/global-market-desk/';
   var DATA_URL = BASE_URL + 'data/market.json';
   var LOG_URL = BASE_URL + 'log/cue-log.json';
+  var MACRO_URL = BASE_URL + 'log/macro.json';
   var TRACK_WINDOW = 30;    // hit-rate साठी शेवटचे किती sessions
   var TRACK_ROWS = 10;      // table मध्ये किती ओळी
 
@@ -58,6 +59,17 @@
   <div class="gmd__card" id="gmd-summary-card" hidden>
     <h3>What Moved</h3>
     <ul class="gmd__summary" id="gmd-summary"></ul>
+  </div>
+
+  <!-- India Macro Snapshot — public/log/macro.json (आठवड्यातून एकदा, macro.yml) -->
+  <div class="gmd__card gmd__macro" id="gmd-macro" hidden>
+    <h3>India Macro Snapshot</h3>
+    <div class="gmd__macro-tiles" id="gmd-macro-tiles"></div>
+    <div class="gmd__grid2 gmd__macro-charts">
+      <div><div class="gmd__macro-chart-title">CPI inflation, % (year on year)</div><div id="gmd-macro-cpi"></div></div>
+      <div><div class="gmd__macro-chart-title">Forex reserves, US$ billion (weekly)</div><div id="gmd-macro-fx"></div></div>
+    </div>
+    <div class="gmd__note" id="gmd-macro-note"></div>
   </div>
 
   <div class="gmd__card">
@@ -546,6 +558,103 @@
     });
   }
 
+  // ---------- India Macro Snapshot ----------
+  var MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // "2026-09" किंवा "2026-10-30" → "Sep 2026" / "30 Oct 2026"
+  function periodText(p) {
+    var m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(String(p || ''));
+    if (!m) return String(p || '—');
+    var month = MONTH_SHORT[parseInt(m[2], 10) - 1] + ' ' + m[1];
+    return m[3] ? parseInt(m[3], 10) + ' ' + month : month;
+  }
+
+  function macroTile(name, value, sub, stale) {
+    var tile = el('div', 'gmd__macro-tile');
+    tile.appendChild(el('div', 'gmd__macro-name', name + (stale ? ' *' : '')));
+    tile.appendChild(el('div', 'gmd__macro-value', value));
+    tile.appendChild(el('div', 'gmd__macro-sub', sub));
+    return tile;
+  }
+
+  // Axis सह छोटा line chart (SVG) — [[label, value], ...]
+  function lineChart(points, unit) {
+    var ns = 'http://www.w3.org/2000/svg';
+    var w = 320, h = 120, padL = 34, padB = 18, padT = 8;
+    var pts = (points || []).filter(function (p) { return p && isNum(p[1]); });
+    var svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    svg.setAttribute('class', 'gmd__macro-svg');
+    svg.setAttribute('role', 'img');
+    if (pts.length < 2) return svg;
+    var vals = pts.map(function (p) { return p[1]; });
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    var pad = (max - min) * 0.1 || 1;
+    min -= pad; max += pad;
+    function x(i) { return padL + i / (pts.length - 1) * (w - padL - 4); }
+    function y(v) { return padT + (max - v) / (max - min) * (h - padT - padB); }
+    function text(tx, ty, s, anchor) {
+      var t = document.createElementNS(ns, 'text');
+      t.setAttribute('x', tx); t.setAttribute('y', ty);
+      t.setAttribute('text-anchor', anchor || 'start');
+      t.setAttribute('class', 'gmd__macro-axis');
+      t.textContent = s;
+      svg.appendChild(t);
+    }
+    [max - pad, min + pad].forEach(function (v) {
+      var g = document.createElementNS(ns, 'line');
+      g.setAttribute('x1', padL); g.setAttribute('x2', w - 4);
+      g.setAttribute('y1', y(v)); g.setAttribute('y2', y(v));
+      g.setAttribute('class', 'gmd__macro-grid');
+      svg.appendChild(g);
+      text(padL - 4, y(v) + 3, v.toFixed(unit === '%' ? 1 : 0), 'end');
+    });
+    var line = document.createElementNS(ns, 'polyline');
+    line.setAttribute('points', pts.map(function (p, i) { return x(i).toFixed(1) + ',' + y(p[1]).toFixed(1); }).join(' '));
+    line.setAttribute('class', 'gmd__macro-line');
+    svg.appendChild(line);
+    var dot = document.createElementNS(ns, 'circle');
+    dot.setAttribute('cx', x(pts.length - 1)); dot.setAttribute('cy', y(vals[vals.length - 1]));
+    dot.setAttribute('r', 3); dot.setAttribute('class', 'gmd__macro-dot');
+    svg.appendChild(dot);
+    text(padL, h - 4, periodText(pts[0][0]));
+    text(w - 4, h - 4, periodText(pts[pts.length - 1][0]), 'end');
+    var title = document.createElementNS(ns, 'title');
+    title.textContent = 'Latest ' + fmt(vals[vals.length - 1], unit === '%' ? 2 : 1) + (unit === '%' ? '%' : ' bn');
+    svg.appendChild(title);
+    return svg;
+  }
+
+  function renderMacro(m) {
+    if (!m || !m.repo) return;
+    var tiles = $('gmd-macro-tiles');
+    tiles.textContent = '';
+    var anyStale = false;
+    function add(item, name, value, sub) {
+      if (!item) return;
+      anyStale = anyStale || !!item.stale;
+      tiles.appendChild(macroTile(name, value, sub, item.stale));
+    }
+    add(m.repo, 'RBI Repo Rate', fmt(m.repo.value, 2) + '%', 'Since ' + periodText(m.repo.as_of));
+    add(m.cpi, 'CPI Inflation', m.cpi && fmt(m.cpi.value, 2) + '%', m.cpi && 'Year on year · ' + periodText(m.cpi.period));
+    add(m.gdp, 'Real GDP Growth', m.gdp && fmt(m.gdp.value, 1) + '%', m.gdp && 'Year on year · ' + m.gdp.period);
+    add(m.forex, 'Forex Reserves', m.forex && 'US$ ' + fmt(m.forex.value, 1) + ' bn',
+      m.forex && ('As on ' + periodText(m.forex.as_of) +
+        (isNum(m.forex.change_week) ? ' · ' + (m.forex.change_week >= 0 ? '+' : '−') + Math.abs(m.forex.change_week).toFixed(1) + ' bn wk' : '')));
+    $('gmd-macro-cpi').appendChild(lineChart(m.cpi && m.cpi.history, '%'));
+    $('gmd-macro-fx').appendChild(lineChart(m.forex && m.forex.history, 'bn'));
+    $('gmd-macro-note').textContent = 'Sources: RBI (repo rate, Weekly Statistical Supplement) and MoSPI (CPI base 2024, GDP base 2022-23). ' +
+      'Updated weekly; each figure shows its own reference period.' + (anyStale ? ' * Latest update failed; previous value shown.' : '');
+    $('gmd-macro').hidden = false;
+  }
+
+  function loadMacro() {
+    fetch(MACRO_URL + '?v=' + Math.floor(Date.now() / 3600000), { credentials: 'omit' })
+      .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+      .then(renderMacro)
+      .catch(function () { /* macro नसला तरी बाकी dashboard चालू — card लपलेलंच राहतं */ });
+  }
+
   function loadTrack() {
     fetch(LOG_URL + '?v=' + Math.floor(Date.now() / 300000), { credentials: 'omit' })
       .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
@@ -577,6 +686,7 @@
     applyMode();
     $('gmd-print').addEventListener('click', function () { window.print(); });
     if (MODE === 'private') { renderRules(); loadCalendar(); loadTrack(); }
+    loadMacro();
 
     // 5-मिनिटांचा cache-buster — CDN cache मधला खूप जुना डेटा टाळतो
     var bucket = Math.floor(Date.now() / 300000);

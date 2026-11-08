@@ -1,0 +1,54 @@
+# India Macro Snapshot — दर शनिवारी सकाळी 07:23 IST: CPI, GDP (MoSPI), forex reserves (RBI) → public/log/macro.json
+# Repo rate config/macro.json मधून (प्रत्येक MPC नंतर हाताने बदला). बदल commit झाल्यावर site लगेच redeploy.
+name: Macro snapshot
+
+on:
+  schedule:
+    - cron: "53 1 * * 6"     # 01:53 UTC शनिवार = 07:23 IST (शुक्रवारचा RBI WSS आलेला असतो)
+  workflow_dispatch: {}
+  push:                      # repo rate बदलला की लगेच
+    branches: [main]
+    paths: ["config/macro.json", "scripts/build_macro.py"]
+
+permissions:
+  contents: write
+  actions: write             # update-data.yml (Pages deploy) चालवण्यासाठी
+
+concurrency:
+  group: macro
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build macro.json
+        run: python scripts/build_macro.py --config config/macro.json --out public/log/macro.json
+
+      - name: Commit macro.json
+        id: commit
+        run: |
+          before=$(git rev-parse HEAD)
+          scripts/commit_log.sh "Update India macro snapshot" public/log/macro.json
+          [ "$(git rev-parse HEAD)" != "$before" ] && echo "changed=true" >> "$GITHUB_OUTPUT" || true
+
+      # GITHUB_TOKEN चा push दुसरा workflow चालवत नाही — म्हणून deploy हाताने सुरू करतो
+      - name: Redeploy site
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run update-data.yml --ref main
+
+      - name: Telegram alert on failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 -c "import sys; sys.path.insert(0, 'scripts'); import notify; notify.send_telegram('Macro snapshot failed: all sources down. Site keeps the previous figures.')"
