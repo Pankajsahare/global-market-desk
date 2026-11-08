@@ -1,5 +1,6 @@
 """तात्पुरती तपासणी: macro sources runner वरून चालतात का. नंतर काढून टाकायची."""
 import json
+import re
 import ssl
 import urllib.parse
 import urllib.request
@@ -22,15 +23,17 @@ def get(url, params=None):
 
 B = "https://api.mospi.gov.in"
 TESTS = [
-    ("rbi 47 2025", B + "/api/rbi/getRbiRecords", {"sub_indicator_code": 47, "year": "2025", "limit": 100}),
-    ("cpi24 a", B + "/api/cpi/getCPIData", {"base_year": "2024", "series": "Current", "year": "2026", "state_code": "1", "Format": "JSON", "limit": 10}),
-    ("cpi24 b", B + "/api/cpi/getCPIData", {"base_year": "2024", "series": "Current", "year": "2026", "Format": "JSON", "limit": 10}),
-    ("cpi24 c", B + "/api/cpi/getCPIData", {"base_year": "2024", "series_code": "Current", "year": "2026", "state_code": "1", "Format": "JSON", "limit": 10}),
-    ("cpi24 d", B + "/api/cpi/getCPIData", {"base_year": "2024", "year": "2026", "Format": "JSON", "limit": 10}),
-    ("cpi24 e", B + "/api/cpi/getCPIIndex", {"base_year": "2024", "series": "Current", "year": "2026", "state_code": "1", "Format": "JSON", "limit": 10}),
+    ("wss list", "https://www.rbi.org.in/Scripts/BS_ViewWssExtract.aspx", None),
+    ("wss 63777", "https://www.rbi.org.in/Scripts/BS_ViewWssExtractdetails.aspx", {"id": "63777"}),
 ]
 
 for name, url, params in TESTS:
     status, body = get(url, params)
     print(f"### {name} -> {status} len={len(body)}")
-    print(body[:2500])
+    print("links:", sorted(set(re.findall(r"WssExtractdetails\.aspx\?id=(\d+)", body, re.I)))[-8:])
+    for m in re.finditer(r"Foreign Exchange Reserves", body, re.I):
+        text = re.sub(r"<[^>]+>", " ", body[m.start():m.start() + 4000])
+        print(re.sub(r"\s+", " ", text)[:900])
+        break
+    titles = re.findall(r"<title>(.*?)</title>", body, re.S | re.I)
+    print("title:", titles[:1])
