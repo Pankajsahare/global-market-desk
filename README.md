@@ -64,5 +64,7 @@ Message न पाठवता preview: `python scripts/morning_brief.py --file 
 ## India Macro Snapshot
 
 - **Repo rate बदलणे (प्रत्येक RBI MPC नंतर):** GitHub → `config/macro.json` → ✏️ → `value` आणि `as_of` (YYYY-MM-DD) बदला → Commit. Push झाल्यावर `macro.yml` आपोआप चालतो आणि site update होते.
+- **FD दर बदलणे (S2, Real FD Return कार्ड):** `config/macro.json` → `fd_rate.value` / `as_of` (SBI च्या साइटवर दर बदलल्यावर). `fd_rate` काढल्यास कार्ड दिसत नाही.
+- CPI chart: 2026 पासून base 2024; त्याआधीचे महिने base 2012 series मधून (S1) — note मध्ये लिहिलेलं असतं.
 - एखादा source बंद असल्यास त्याचा मागचा आकडा `*` सह दिसतो; तिन्ही बंद असल्यास Telegram alert आणि site वर जुनी file.
 - Widget card "What Moved" खाली आहे; `public/widget/gmd.js` मधील `renderMacro`.

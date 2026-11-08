@@ -83,11 +83,13 @@
 @media print { #gmd-root .gmd__signup { display:none !important; } }
 
 /* India Macro Snapshot */
-.gmd__macro-tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:16px; }
+.gmd__macro-tiles { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-bottom:16px; }
 .gmd__macro-tile { background:#0b1f3a; border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
 .gmd__macro-name { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
 .gmd__macro-value { font-size:24px; font-weight:700; margin:2px 0; }
 .gmd__macro-sub { font-size:12px; color:var(--muted); }
+.gmd__macro-tile.is-up .gmd__macro-value { color:var(--up); }
+.gmd__macro-tile.is-down .gmd__macro-value { color:var(--down); }
 .gmd__macro-charts { margin-bottom:0; }
 .gmd__macro-chart-title { font-size:13px; margin-bottom:4px; }
 .gmd__macro-svg { width:100%; height:auto; display:block; }

@@ -10,7 +10,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import build_macro  # noqa: E402
 
 NOW = datetime(2026, 11, 8, 2, 0, tzinfo=timezone.utc)
-CONFIG = {"repo_rate": {"value": 5.5, "as_of": "2026-10-07", "source": "RBI"}, "cpi_months": 24, "forex_weeks": 52}
+CONFIG = {"repo_rate": {"value": 5.5, "as_of": "2026-10-07", "source": "RBI"}, "cpi_months": 24, "forex_weeks": 52,
+          "fd_rate": {"value": 6.4, "label": "SBI FD, 2 to 3 years", "as_of": "2026-11-08"}}
 
 WSS_PAGE = """<html><body><table><tr><td>Foreign Exchange Reserves*</td></tr>
 <tr><td>Item</td><td>As on October 30, 2026</td><td>Variation over</td></tr>
@@ -27,6 +28,16 @@ def fake_get(fail=()):
     """URL नुसार ठरलेलं उत्तर देणारा fetch."""
     def get(url, params=None):
         params = params or {}
+        if "getCPIIndex" in url:
+            if params.get("year") == "2025":
+                rows = [{"year": "2025", "month": "December", "sector": "Combined", "group": "General Index",
+                         "subgroup": "General", "inflation": "1.33"},
+                        {"year": "2025", "month": "December", "sector": "Combined", "group": "Miscellaneous",
+                         "subgroup": "Education", "inflation": "3.37"},
+                        {"year": "2025", "month": "November", "sector": "Combined", "group": "General Index",
+                         "subgroup": "General", "inflation": "0.71"}]
+                return json.dumps({"data": rows, "meta_data": {"totalPages": 1}})
+            return json.dumps({"data": []})
         if "cpi" in url:
             if "cpi" in fail:
                 raise OSError("down")
@@ -58,7 +69,10 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(failed, [])
         self.assertEqual(out["repo"]["value"], 5.5)
         self.assertEqual((out["cpi"]["value"], out["cpi"]["period"]), (5.54, "2026-09"))
-        self.assertEqual(out["cpi"]["history"], [["2026-08", 5.1], ["2026-09", 5.54]])
+        self.assertEqual(out["cpi"]["history"],
+                         [["2025-11", 0.71], ["2025-12", 1.33], ["2026-08", 5.1], ["2026-09", 5.54]])
+        self.assertEqual(out["cpi"]["base_2012_until"], "2025-12")
+        self.assertEqual(out["real_return"]["value"], 0.86)
         self.assertEqual((out["gdp"]["value"], out["gdp"]["period"]), (7.8, "Q1 FY26-27"))
         self.assertEqual(out["gdp"]["history"][0][0], "Q1 FY25-26")
         self.assertEqual((out["forex"]["value"], out["forex"]["as_of"], out["forex"]["change_week"]),

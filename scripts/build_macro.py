@@ -82,10 +82,50 @@ def fetch_cpi(get: Fetch, today: datetime, months: int) -> dict[str, Any]:
                     points[f"{int(row['year']):04d}-{MONTHS.index(row['month']) + 1:02d}"] = value
     if not points:
         raise ValueError("no CPI rows")
+    # S1: base 2024 series 2026 पासून; त्याआधीचे महिने जुन्या base 2012 series मधून (chart पूर्ण 24 महिन्यांचा)
+    first = min(points)
+    wanted = sorted({f"{y:04d}-{m:02d}" for y in range(today.year - 3, today.year + 1) for m in range(1, 13)
+                     if f"{y:04d}-{m:02d}" < first})[-max(months - len(points), 0):] if len(points) < months else []
+    old_series: list[str] = []
+    for year in sorted({int(p[:4]) for p in wanted}):
+        for period, value in _cpi_2012(get, year).items():
+            if period in wanted and period not in points:
+                points[period] = value
+                old_series.append(period)
     history = sorted(points.items())[-months:]
     period, value = history[-1]
-    return {"value": _check("cpi", value), "period": period, "source": "MoSPI (CPI, base 2024)",
-            "history": [[p, round(v, 2)] for p, v in history]}
+    out = {"value": _check("cpi", value), "period": period, "source": "MoSPI (CPI, base 2024)",
+           "history": [[p, round(v, 2)] for p, v in history]}
+    linked = sorted(p for p in old_series if p >= history[0][0])
+    if linked:
+        out["base_2012_until"] = linked[-1]
+    return out
+
+
+def _cpi_2012(get: Fetch, year: int) -> dict[str, float]:
+    """जुनी CPI (base 2012): All India, Combined, General Index ची महागाई; error आल्यास रिकामं."""
+    found: dict[str, float] = {}
+    page, pages = 1, 1
+    while page <= pages and page <= 20:
+        params = {"base_year": "2012", "series": "Current", "year": str(year), "state_code": "99",
+                  "sector_code": "3", "Format": "JSON", "limit": 100}
+        if page > 1:
+            params["page"] = str(page)
+        try:
+            body = json.loads(get(MOSPI + "/api/cpi/getCPIIndex", params))
+        except (ValueError, OSError) as exc:
+            print(f"INFO: CPI 2012 {year} page {page}: {type(exc).__name__}: {exc}", file=sys.stderr)
+            break
+        pages = int((body.get("meta_data") or {}).get("totalPages") or 1)
+        for row in body.get("data") or []:
+            name = f"{row.get('group') or ''} {row.get('subgroup') or ''}".lower()
+            if (row.get("sector") == "Combined" and "general" in name and row.get("month") in MONTHS
+                    and _num(row.get("inflation")) is not None):
+                found[f"{int(row['year']):04d}-{MONTHS.index(row['month']) + 1:02d}"] = _num(row["inflation"])
+        page += 1
+    if not found:
+        print(f"INFO: CPI 2012 {year}: no General Index rows", file=sys.stderr)
+    return found
 
 
 # ---------- GDP ----------
@@ -191,6 +231,9 @@ def build(get: Fetch, config: dict[str, Any], previous: dict[str, Any], now: dat
     repo = dict(config["repo_rate"])
     repo["value"] = _check("repo", _num(repo["value"]))
     out: dict[str, Any] = {"updated": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "repo": repo}
+    fd = config.get("fd_rate")
+    if fd and _num(fd.get("value")) is not None:
+        out["fd"] = {**fd, "value": _check("repo", _num(fd["value"]))}
     failed: list[str] = []
     jobs = {
         "cpi": lambda: fetch_cpi(get, now, int(config.get("cpi_months", 24))),
@@ -205,6 +248,10 @@ def build(get: Fetch, config: dict[str, Any], previous: dict[str, Any], now: dat
             failed.append(key)
             if previous.get(key):
                 out[key] = {**previous[key], "stale": True}
+    # S2: real return = FD दर − CPI महागाई (दोन्ही ताजे असतील तेव्हाच)
+    if out.get("fd") and out.get("cpi"):
+        out["real_return"] = {"value": round(out["fd"]["value"] - out["cpi"]["value"], 2),
+                              "fd": out["fd"]["value"], "cpi": out["cpi"]["value"], "cpi_period": out["cpi"]["period"]}
     return out, failed
 
 

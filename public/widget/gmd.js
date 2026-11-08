@@ -641,10 +641,21 @@
     add(m.forex, 'Forex Reserves', m.forex && 'US$ ' + fmt(m.forex.value, 1) + ' bn',
       m.forex && ('As on ' + periodText(m.forex.as_of) +
         (isNum(m.forex.change_week) ? ' \u00b7 ' + (m.forex.change_week >= 0 ? '+' : '\u2212') + Math.abs(m.forex.change_week).toFixed(1) + ' bn wk' : '')));
+    // S2: FD दर − CPI = खरा परतावा (महागाईनंतर)
+    if (m.real_return && m.fd) {
+      var rr = m.real_return.value;
+      var tile = macroTile('Real FD Return', (rr >= 0 ? '+' : '\u2212') + Math.abs(rr).toFixed(2) + '%',
+        (m.fd.label || 'Bank FD') + ' ' + fmt(m.fd.value, 2) + '% \u2212 CPI ' + fmt(m.real_return.cpi, 2) + '%', false);
+      tile.classList.add(rr >= 0 ? 'is-up' : 'is-down');
+      tiles.appendChild(tile);
+    }
     $('gmd-macro-cpi').appendChild(lineChart(m.cpi && m.cpi.history, '%'));
     $('gmd-macro-fx').appendChild(lineChart(m.forex && m.forex.history, 'bn'));
     $('gmd-macro-note').textContent = 'Sources: RBI (repo rate, Weekly Statistical Supplement) and MoSPI (CPI base 2024, GDP base 2022-23). ' +
-      'Updated weekly; each figure shows its own reference period.' + (anyStale ? ' * Latest update failed; previous value shown.' : '');
+      'Updated weekly; each figure shows its own reference period.' +
+      (m.cpi && m.cpi.base_2012_until ? ' CPI up to ' + periodText(m.cpi.base_2012_until) + ' is from the older base-2012 series.' : '') +
+      (m.fd ? ' Real FD return = ' + (m.fd.label || 'bank FD') + ' rate minus latest CPI inflation, before tax; illustrative only.' : '') +
+      (anyStale ? ' * Latest update failed; previous value shown.' : '');
     $('gmd-macro').hidden = false;
   }
 
