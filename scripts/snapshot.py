@@ -32,7 +32,7 @@ class _QuietHandler(http.server.SimpleHTTPRequestHandler):
 
 
 @contextlib.contextmanager
-def serve_and_open(data_file: Path, page_name: str, viewport: tuple[int, int] = (1080, 1350)):
+def serve_and_open(data_file: Path, page_name: str, viewport: tuple[int, int] = (1080, 1350), query: str = ""):
     """public/widget/<page_name> + data एका temp folder मध्ये serve करून headless browser मध्ये उघडा."""
     from playwright.sync_api import sync_playwright  # workflow मध्येच install होतो
 
@@ -54,7 +54,7 @@ def serve_and_open(data_file: Path, page_name: str, viewport: tuple[int, int] = 
             with sync_playwright() as p:
                 browser = p.chromium.launch()
                 page = browser.new_page(viewport={"width": viewport[0], "height": viewport[1]})
-                page.goto(f"http://127.0.0.1:{server.server_port}/widget/{page_name}")
+                page.goto(f"http://127.0.0.1:{server.server_port}/widget/{page_name}{query}")
                 page.wait_for_selector("body[data-ready]", timeout=15000)
                 if page.get_attribute("body", "data-ready") != "1":
                     raise RuntimeError(f"{page_name} could not load data")

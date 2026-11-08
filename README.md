@@ -67,4 +67,8 @@ Message न पाठवता preview: `python scripts/morning_brief.py --file 
 - **FD दर बदलणे (S2, Real FD Return कार्ड):** `config/macro.json` → `fd_rate.value` / `as_of` (SBI च्या साइटवर दर बदलल्यावर). `fd_rate` काढल्यास कार्ड दिसत नाही.
 - CPI chart: 2026 पासून base 2024; त्याआधीचे महिने base 2012 series मधून (S1) — note मध्ये लिहिलेलं असतं.
 - एखादा source बंद असल्यास त्याचा मागचा आकडा `*` सह दिसतो; तिन्ही बंद असल्यास Telegram alert आणि site वर जुनी file.
+- **FD calculator (S2):** Macro खाली "What Is Your FD Really Worth?" — FD दर व महागाई default macro.json मधून; WhatsApp बटणात visitor चा हिशोब prefilled.
+- **Social card (S3):** नवीन CPI/GDP आल्यावर `scripts/macro_card.py` → `public/widget/macro-card.html` चा 1080×1350 PNG private Telegram वर.
+- **Data-अलार्म (S4):** CPI 50, GDP 165, forex 16, G-Sec 7 दिवसांपेक्षा जुना → आठवड्याला Telegram alert.
+- **SEO (S1):** `wordpress/shortcode-snippet.php` मध्ये macro वाक्यं + meta description — snippet पुन्हा paste करावा लागतो.
 - Widget card "What Moved" खाली आहे; `public/widget/gmd.js` मधील `renderMacro`.

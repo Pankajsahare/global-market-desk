@@ -72,6 +72,22 @@
     <div class="gmd__note" id="gmd-macro-note"></div>
   </div>
 
+  <!-- S2: FD real value calculator (public) — फक्त FD चं गणित, MF परताव्याचा अंदाज नाही -->
+  <div class="gmd__card gmd__calc" id="gmd-calc" hidden>
+    <h3>What Is Your FD Really Worth?</h3>
+    <div class="gmd__sub">See what a fixed deposit grows to after income tax, and what that amount buys in today's money.</div>
+    <div class="gmd__calc-form">
+      <label>Amount (&#8377;)<input type="number" id="calc-amount" min="1000" step="1000" value="500000" inputmode="numeric"></label>
+      <label>Years<input type="number" id="calc-years" min="1" max="20" step="1" value="5" inputmode="numeric"></label>
+      <label>FD rate (% a year)<input type="number" id="calc-rate" min="0" max="15" step="0.05"></label>
+      <label>Your tax slab<select id="calc-slab"><option value="0">0%</option><option value="5">5%</option><option value="10">10%</option><option value="15">15%</option><option value="20">20%</option><option value="30" selected>30%</option></select></label>
+      <label>Inflation (% a year)<input type="number" id="calc-infl" min="0" max="20" step="0.05"></label>
+    </div>
+    <div class="gmd__calc-out" id="calc-out"></div>
+    <div class="gmd__note">Illustration only. Assumes yearly compounding, tax at your slab plus 4% cess on interest each year, and constant inflation (default: latest CPI). Actual FD terms, TDS and future inflation will differ. Not investment advice.</div>
+    <div class="gmd__cta"><a id="calc-wa" href="https://wa.me/919405908605" target="_blank" rel="noopener">Discuss My Savings on WhatsApp</a></div>
+  </div>
+
   <div class="gmd__card">
     <h3>World Markets — Today</h3>
     <div id="gmd-heatmap"></div>
@@ -675,6 +691,49 @@
       (m.fd ? ' Real FD return = ' + (m.fd.label || 'bank FD') + ' rate minus latest CPI inflation, before tax; illustrative only.' : '') +
       (anyStale ? ' * Latest update failed; previous value shown.' : '');
     $('gmd-macro').hidden = false;
+    if (MODE === 'public') setupCalc(m);
+  }
+
+  // ---------- S2: FD real value calculator ----------
+  function inr(v) { return '\u20b9' + Math.round(v).toLocaleString('en-IN'); }
+
+  function setupCalc(m) {
+    var ids = ['calc-amount', 'calc-years', 'calc-rate', 'calc-slab', 'calc-infl'];
+    if (m.fd && isNum(m.fd.value)) $('calc-rate').value = m.fd.value.toFixed(2);
+    else $('calc-rate').value = '6.50';
+    $('calc-infl').value = (m.cpi && isNum(m.cpi.value) ? m.cpi.value : 5).toFixed(2);
+
+    function num(id) { var v = parseFloat($(id).value); return isFinite(v) ? v : NaN; }
+    function stat(label, value, cls) {
+      var box = el('div', 'gmd__calc-stat' + (cls ? ' ' + cls : ''));
+      box.appendChild(el('div', 'gmd__macro-name', label));
+      box.appendChild(el('div', 'gmd__macro-value', value));
+      return box;
+    }
+    function update() {
+      var p = num('calc-amount'), n = Math.round(num('calc-years')), r = num('calc-rate') / 100;
+      var t = num('calc-slab') * 1.04 / 100, i = num('calc-infl') / 100;
+      var out = $('calc-out');
+      out.textContent = '';
+      if (!(p > 0) || !(n >= 1 && n <= 40) || !(r >= 0) || !(i >= 0)) {
+        out.appendChild(el('div', 'gmd__sub', 'Enter an amount, 1 to 40 years, and rates of 0% or more.'));
+        return;
+      }
+      var gross = p * Math.pow(1 + r, n);
+      var net = p * Math.pow(1 + r * (1 - t), n);
+      var today = net / Math.pow(1 + i, n);
+      var realRate = ((1 + r * (1 - t)) / (1 + i) - 1) * 100;
+      out.appendChild(stat('Maturity before tax', inr(gross)));
+      out.appendChild(stat('After income tax', inr(net)));
+      out.appendChild(stat("In today's money", inr(today), today >= p ? 'is-up' : 'is-down'));
+      out.appendChild(stat('Real return a year', (realRate >= 0 ? '+' : '\u2212') + Math.abs(realRate).toFixed(2) + '%', realRate >= 0 ? 'is-up' : 'is-down'));
+      var msg = 'Hi, I used the FD calculator on advisor4u.in. ' + inr(p) + ' for ' + n + ' years at ' + (r * 100).toFixed(2) +
+        '% works out to ' + inr(today) + " in today's money. I'd like to discuss my savings.";
+      $('calc-wa').href = 'https://wa.me/919405908605?text=' + encodeURIComponent(msg);
+    }
+    ids.forEach(function (id) { $(id).addEventListener('input', update); $(id).addEventListener('change', update); });
+    update();
+    $('gmd-calc').hidden = false;
   }
 
   function loadMacro() {

@@ -136,6 +136,21 @@ class ExtraTests(unittest.TestCase):
         self.assertEqual(on("2026-12-07"), [])
 
 
+class StaleTests(unittest.TestCase):
+    def test_stale_cpi_alerts_weekly(self):
+        out = {"cpi": {"period": "2026-09"}, "forex": {"as_of": "2026-10-30"}}
+        on = lambda d: build_macro.stale_alerts(out, datetime.fromisoformat(d))
+        self.assertEqual(on("2026-11-18"), [])                 # CPI 48 दिवस, forex 19 दिवस पण 16 + 7k नाही
+        self.assertEqual(len(on("2026-11-19")), 1)             # CPI 50 दिवस
+        self.assertIn("CPI", on("2026-11-19")[0])
+        self.assertEqual(len(on("2026-11-15")), 1)             # forex 16 दिवस
+
+    def test_gdp_reference_day(self):
+        self.assertEqual(build_macro._reference_day("gdp", {"period": "Q1 FY26-27"}), "2026-06-30")
+        self.assertEqual(build_macro._reference_day("gdp", {"period": "Q4 FY25-26"}), "2026-03-31")
+        self.assertEqual(build_macro._reference_day("cpi", {"period": "2026-12"}), "2026-12-31")
+
+
 class ParseWssTests(unittest.TestCase):
     def test_parse(self):
         self.assertEqual(build_macro.parse_wss(WSS_PAGE), ("2026-10-30", 717.06, -2.69))

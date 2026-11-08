@@ -37,6 +37,54 @@ function gmd_market_meta(): array {
     return $meta;
 }
 
+// S1 (SEO): India macro — macro.json मधून ठळक आकडे; 6 तास cache (fail झाल्यास 10 मिनिटं)
+function gmd_macro_meta(): array {
+    $cache_key = 'gmd_macro_v1';
+    $cached    = get_transient($cache_key);
+    if (false !== $cached) {
+        return (array) $cached;
+    }
+    $macro = array();
+    $res   = wp_remote_get('https://pankajsahare.github.io/global-market-desk/log/macro.json', array('timeout' => 8));
+    if (!is_wp_error($res) && 200 === (int) wp_remote_retrieve_response_code($res)) {
+        $data = json_decode(wp_remote_retrieve_body($res), true);
+        if (is_array($data) && !empty($data['repo']['value'])) {
+            $macro = $data;
+        }
+    }
+    set_transient($cache_key, $macro, empty($macro) ? 10 * MINUTE_IN_SECONDS : 6 * HOUR_IN_SECONDS);
+    return $macro;
+}
+
+// "2026-09" → "Sep 2026"
+function gmd_month_label(string $period): string {
+    $time = strtotime($period . '-01');
+    return $time ? date('M Y', $time) : $period;
+}
+
+// Google ला दिसणारी साधी वाक्यं (English, फक्त जाहीर आकडे)
+function gmd_macro_lines(): array {
+    $m     = gmd_macro_meta();
+    $lines = array();
+    if (empty($m)) {
+        return $lines;
+    }
+    $lines[] = sprintf('RBI repo rate: %.2f%%.', (float) $m['repo']['value']);
+    if (!empty($m['cpi']['value'])) {
+        $lines[] = sprintf('India CPI inflation: %.2f%% (%s).', (float) $m['cpi']['value'], gmd_month_label((string) $m['cpi']['period']));
+    }
+    if (!empty($m['gdp']['value'])) {
+        $lines[] = sprintf('India real GDP growth: %.1f%% (%s).', (float) $m['gdp']['value'], (string) $m['gdp']['period']);
+    }
+    if (!empty($m['gsec']['value'])) {
+        $lines[] = sprintf('10-year G-Sec yield: %.2f%%.', (float) $m['gsec']['value']);
+    }
+    if (!empty($m['forex']['value'])) {
+        $lines[] = sprintf('Forex reserves: US$ %.1f billion.', (float) $m['forex']['value']);
+    }
+    return $lines;
+}
+
 function gmd_summary_lines(): array {
     return gmd_market_meta()['lines'];
 }
@@ -69,6 +117,12 @@ function gmd_meta_description(): string {
         return '';
     }
     $text = 'Global markets today: ' . implode(' ', array_slice($lines, 0, 2));
+    // S1: CPI आणि repo आधी — "India inflation today" सारख्या searches साठी
+    $macro = gmd_macro_meta();
+    if (!empty($macro['cpi']['value'])) {
+        $text = sprintf('India CPI %.2f%% (%s), repo %.2f%%. ', (float) $macro['cpi']['value'],
+            gmd_month_label((string) $macro['cpi']['period']), (float) $macro['repo']['value']) . $text;
+    }
     if (strlen($text) > 155) {
         $text = rtrim(substr($text, 0, 152));
         $text = substr($text, 0, (int) strrpos($text, ' ')) . '...';
@@ -137,6 +191,14 @@ add_shortcode('gmd_dashboard', function ($atts) {
             $inner .= '<li>' . esc_html($line) . '</li>';
         }
         $inner .= '</ul><p><small>Market data is delayed and shown for information only; not investment advice.</small></p>';
+    }
+    $macro_lines = gmd_macro_lines();
+    if (!empty($macro_lines)) {
+        $inner .= '<h2>India Macro Snapshot</h2><ul>';
+        foreach ($macro_lines as $line) {
+            $inner .= '<li>' . esc_html($line) . '</li>';
+        }
+        $inner .= '</ul><p><small>Sources: RBI and MoSPI.</small></p>';
     }
 
     return '<div class="gmd" id="gmd-root" data-mode="' . esc_attr($mode) . '">' . $inner . '</div>';

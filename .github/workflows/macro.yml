@@ -31,10 +31,25 @@ jobs:
           python-version: "3.12"
 
       - name: Build macro.json
+        id: build
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python scripts/build_macro.py --config config/macro.json --out public/log/macro.json
+
+      # S3: नवीन CPI / GDP → 1080×1350 social card private Telegram वर (तपासून मगच post करा)
+      - name: Social card for new release
+        if: steps.build.outputs.releases != ''
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RELEASES: ${{ steps.build.outputs.releases }}
+        run: |
+          pip install -q playwright==1.48.0
+          python -m playwright install --with-deps chromium
+          for kind in $RELEASES; do
+            python scripts/macro_card.py --kind "$kind" --data public/log/macro.json --out "macro-$kind.png" --send || true
+          done
 
       - name: Commit macro.json
         id: commit

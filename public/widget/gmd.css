@@ -105,3 +105,14 @@
   #gmd-root .gmd__macro-tile { background:#fff; }
   #gmd-root .gmd__macro-line { stroke:#b7791f; }
 }
+
+/* S2: FD calculator */
+.gmd__calc-form { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin:14px 0; }
+.gmd__calc-form label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); }
+.gmd__calc-form input, .gmd__calc-form select { background:#0b1f3a; color:var(--text); border:1px solid var(--line); border-radius:6px;
+  padding:9px 10px; font-size:15px; width:100%; font-family:inherit; }
+.gmd__calc-out { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:6px; }
+.gmd__calc-stat { background:#0b1f3a; border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+.gmd__calc-stat.is-up .gmd__macro-value { color:var(--up); }
+.gmd__calc-stat.is-down .gmd__macro-value { color:var(--down); }
+@media print { #gmd-root .gmd__calc { display:none !important; } }

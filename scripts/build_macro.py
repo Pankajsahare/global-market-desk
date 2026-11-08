@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import ssl
 import sys
@@ -312,6 +313,40 @@ def reminders(config: dict[str, Any], today: datetime) -> list[str]:
     return msgs
 
 
+# ---------- data-अलार्म (S4) ----------
+STALE_DAYS = {"cpi": 50, "gdp": 165, "forex": 16, "gsec": 7}  # पुढचा आकडा साधारण कधी येतो + थोडी सवलत
+
+
+def _reference_day(key: str, item: dict[str, Any]) -> str | None:
+    """आकडा कोणत्या दिवसाचा: CPI → महिन्याचा शेवट, GDP → तिमाहीचा शेवट, बाकी as_of."""
+    if key == "cpi" and item.get("period"):
+        year, month = map(int, item["period"].split("-"))
+        nxt = datetime(year + month // 12, month % 12 + 1, 1)
+        return (nxt - timedelta(days=1)).date().isoformat()
+    if key == "gdp" and item.get("period"):
+        m = re.match(r"Q(\d) FY(\d{2})-", item["period"])
+        if not m:
+            return None
+        quarter, start = int(m.group(1)), 2000 + int(m.group(2))
+        return {1: f"{start}-06-30", 2: f"{start}-09-30", 3: f"{start}-12-31", 4: f"{start + 1}-03-31"}[quarter]
+    return item.get("as_of")
+
+
+def stale_alerts(out: dict[str, Any], today: datetime) -> list[str]:
+    """आकडा अपेक्षेपेक्षा जुना → source/format बदलला असेल; उशीर सुरू झाल्यापासून आठवड्यातून एकदा alert."""
+    msgs = []
+    for key, limit in STALE_DAYS.items():
+        item = out.get(key)
+        ref = _reference_day(key, item) if item else None
+        if not ref:
+            continue
+        late = (today.date() - datetime.fromisoformat(ref).date()).days - limit
+        if late >= 0 and late % 7 == 0:
+            msgs.append(f"⚠️ Macro data looks stale: {key.upper()} is still for {item.get('period') or ref} "
+                        f"({late + limit} days old). The source may have changed its format; check the Macro snapshot workflow log.")
+    return msgs
+
+
 # ---------- assemble ----------
 def build(get: Fetch, config: dict[str, Any], previous: dict[str, Any], now: datetime,
           pause: Callable[[float], None] = time.sleep) -> tuple[dict[str, Any], list[str]]:
@@ -361,7 +396,14 @@ def main() -> int:
     if len(failed) == 4:
         print("ERROR: all macro sources failed; keeping previous file", file=sys.stderr)
         return 1
-    messages = release_alerts(previous, snapshot) + reminders(config, now + timedelta(hours=5, minutes=30))
+    ist = now + timedelta(hours=5, minutes=30)
+    released = release_alerts(previous, snapshot)
+    messages = released + reminders(config, ist) + stale_alerts(snapshot, ist)
+    # S3: workflow ला सांगतो कोणत्या social card बनवायच्या
+    kinds = [kind for kind, tag in (("cpi", "CPI released"), ("gdp", "GDP released")) if any(tag in m for m in released)]
+    if os.environ.get("GITHUB_OUTPUT"):
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+            handle.write(f"releases={' '.join(kinds)}\n")
     same = {k: v for k, v in snapshot.items() if k != "updated"} == {k: v for k, v in previous.items() if k != "updated"}
     if same:
         print("macro.json unchanged")

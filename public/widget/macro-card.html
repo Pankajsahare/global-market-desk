@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>India Macro Card</title>
+<!--
+  S3 — नवीन CPI / GDP जाहीर झाल्यावर social image (1080×1350).
+  scripts/macro_card.py हे पान headless browser मध्ये उघडतो; ?kind=cpi किंवा ?kind=gdp.
+  डेटा: ../data/market.json (macro_card.py तिथे macro.json ठेवतो). फक्त जाहीर आकडे — सल्ला नाही.
+-->
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#000; font-family:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  #snap { width:1080px; height:1350px; background:linear-gradient(180deg,#0b1a33 0%,#0d1424 100%);
+          color:#e5e7eb; padding:56px 60px 44px; display:flex; flex-direction:column; gap:30px; }
+  .head { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #f2b134; padding-bottom:18px; }
+  .title { font-size:54px; font-weight:800; color:#fff; }
+  .date { font-size:26px; color:#cbd5e1; margin-top:6px; }
+  .brand { text-align:right; font-size:24px; font-weight:700; color:#f2b134; }
+  .brand small { display:block; font-size:18px; color:#94a3b8; font-weight:500; }
+  .hero-label { font-size:30px; color:#cbd5e1; }
+  .hero { font-size:150px; font-weight:800; color:#f2b134; line-height:1; margin:6px 0 10px; }
+  .hero-sub { font-size:30px; color:#e5e7eb; }
+  .section { font-size:20px; text-transform:uppercase; letter-spacing:2px; color:#94a3b8; margin-bottom:10px; }
+  .legend span { font-size:20px; margin-right:24px; }
+  svg { width:100%; height:300px; display:block; }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .box { background:rgba(255,255,255,0.06); border-radius:12px; padding:16px 18px; }
+  .box .n { font-size:20px; color:#cbd5e1; }
+  .box .v { font-size:38px; font-weight:800; margin:4px 0 2px; color:#fff; }
+  .box .s { font-size:17px; color:#94a3b8; }
+  .foot { margin-top:auto; font-size:17px; color:#94a3b8; line-height:1.45; border-top:1px solid rgba(255,255,255,0.15); padding-top:14px; }
+</style>
+</head>
+<body>
+<div id="snap">
+  <div class="head">
+    <div><div class="title">India Macro Update</div><div class="date" id="date">—</div></div>
+    <div class="brand">Sahare Wealth<small>advisor4u.in</small></div>
+  </div>
+  <div>
+    <div class="hero-label" id="hero-label">—</div>
+    <div class="hero" id="hero">—</div>
+    <div class="hero-sub" id="hero-sub"></div>
+  </div>
+  <div>
+    <div class="section" id="chart-title">Trend</div>
+    <div class="legend" id="legend"></div>
+    <div id="chart"></div>
+  </div>
+  <div>
+    <div class="section">India at a glance</div>
+    <div class="grid" id="grid"></div>
+  </div>
+  <div class="foot">
+    Sahare Wealth · AMFI-registered Mutual Fund Distributor · ARN-151469 · www.advisor4u.in<br>
+    Sources: MoSPI, RBI. Official data shown for information only; not investment advice or a recommendation.
+    Mutual Fund investments are subject to market risks, read all scheme related documents carefully.
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  var KIND = new URLSearchParams(location.search).get('kind') === 'gdp' ? 'gdp' : 'cpi';
+  var MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+  function isNum(v) { return typeof v === 'number' && isFinite(v); }
+  function month(p) { var q = String(p).split('-'); return MON[+q[1] - 1] + ' ' + q[0]; }
+  function short(p) { var q = String(p).split('-'); return MON[+q[1] - 1].slice(0, 3) + ' ' + q[0]; }
+
+  // CPI (आणि repo) किंवा GDP साठी SVG line chart
+  function chart(labels, values, second) {
+    var ns = 'http://www.w3.org/2000/svg', w = 960, h = 300, padL = 60, padB = 36, padT = 14;
+    var svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    var all = values.concat((second || []).filter(isNum));
+    var min = Math.min.apply(null, all), max = Math.max.apply(null, all), pad = (max - min) * 0.12 || 1;
+    min -= pad; max += pad;
+    function x(i) { return padL + i / (values.length - 1) * (w - padL - 10); }
+    function y(v) { return padT + (max - v) / (max - min) * (h - padT - padB); }
+    function add(tag, attrs, text) {
+      var n = document.createElementNS(ns, tag);
+      Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+      if (text) n.textContent = text;
+      svg.appendChild(n);
+    }
+    [max - pad, min + pad].forEach(function (v) {
+      add('line', { x1: padL, x2: w - 10, y1: y(v), y2: y(v), stroke: 'rgba(255,255,255,0.15)' });
+      add('text', { x: padL - 8, y: y(v) + 6, 'text-anchor': 'end', fill: '#94a3b8', 'font-size': 18 }, v.toFixed(1));
+    });
+    if (second) {
+      var pts = [];
+      second.forEach(function (v, i) {
+        if (!isNum(v)) return;
+        if (pts.length) pts.push(x(i) + ',' + pts[pts.length - 1].split(',')[1]);
+        pts.push(x(i) + ',' + y(v));
+      });
+      add('polyline', { points: pts.join(' '), fill: 'none', stroke: '#60a5fa', 'stroke-width': 3, 'stroke-dasharray': '8 6' });
+    }
+    add('polyline', { points: values.map(function (v, i) { return x(i) + ',' + y(v); }).join(' '), fill: 'none', stroke: '#f2b134', 'stroke-width': 5 });
+    add('circle', { cx: x(values.length - 1), cy: y(values[values.length - 1]), r: 8, fill: '#f2b134' });
+    add('text', { x: padL, y: h - 6, fill: '#94a3b8', 'font-size': 18 }, labels[0]);
+    add('text', { x: w - 10, y: h - 6, 'text-anchor': 'end', fill: '#94a3b8', 'font-size': 18 }, labels[labels.length - 1]);
+    return svg;
+  }
+
+  function box(name, value, sub) {
+    var b = el('div', 'box');
+    b.appendChild(el('div', 'n', name)); b.appendChild(el('div', 'v', value)); b.appendChild(el('div', 's', sub));
+    $('grid').appendChild(b);
+  }
+
+  fetch('../data/market.json').then(function (r) { return r.json(); }).then(function (m) {
+    $('date').textContent = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+    var hist;
+    if (KIND === 'cpi') {
+      hist = m.cpi.history;
+      var prev = hist.length > 1 ? hist[hist.length - 2][1] : null;
+      $('hero-label').textContent = 'Retail inflation (CPI), ' + month(m.cpi.period);
+      $('hero').textContent = m.cpi.value.toFixed(2) + '%';
+      $('hero-sub').textContent = isNum(prev) ? (m.cpi.value >= prev ? 'Up' : 'Down') + ' from ' + prev.toFixed(2) + '% the month before' : '';
+      $('chart-title').textContent = 'CPI inflation vs RBI repo rate, % (24 months)';
+      $('legend').innerHTML = '<span style="color:#f2b134">— CPI inflation</span><span style="color:#60a5fa">- - Repo rate</span>';
+      $('chart').appendChild(chart(hist.map(function (p) { return short(p[0]); }), hist.map(function (p) { return p[1]; }), m.cpi.repo));
+    } else {
+      hist = m.gdp.history;
+      $('hero-label').textContent = 'Real GDP growth, ' + m.gdp.period;
+      $('hero').textContent = m.gdp.value.toFixed(1) + '%';
+      $('hero-sub').textContent = hist.length > 1 ? 'Previous quarter: ' + hist[hist.length - 2][1].toFixed(1) + '%' : '';
+      $('chart-title').textContent = 'Real GDP growth, % year on year (last 8 quarters)';
+      $('chart').appendChild(chart(hist.map(function (p) { return p[0]; }), hist.map(function (p) { return p[1]; })));
+    }
+    box('RBI repo rate', m.repo.value.toFixed(2) + '%', 'since ' + m.repo.as_of);
+    if (KIND !== 'cpi' && m.cpi) box('CPI inflation', m.cpi.value.toFixed(2) + '%', short(m.cpi.period));
+    if (KIND !== 'gdp' && m.gdp) box('Real GDP growth', m.gdp.value.toFixed(1) + '%', m.gdp.period);
+    if (m.gsec) box('10Y G-Sec yield', m.gsec.value.toFixed(2) + '%', m.gsec.as_of);
+    if (m.forex) box('Forex reserves', 'US$ ' + m.forex.value.toFixed(0) + ' bn', 'as on ' + m.forex.as_of);
+    if (m.real_return) box('Real FD return', (m.real_return.value >= 0 ? '+' : '') + m.real_return.value.toFixed(2) + '%', 'FD ' + m.real_return.fd.toFixed(2) + '% minus CPI, pre-tax');
+    document.body.setAttribute('data-ready', '1');
+  }).catch(function () { document.body.setAttribute('data-ready', 'error'); });
+})();
+</script>
+</body>
+</html>
