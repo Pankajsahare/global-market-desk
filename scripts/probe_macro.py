@@ -22,25 +22,15 @@ def get(url, params=None):
 
 B = "https://api.mospi.gov.in"
 TESTS = [
-    ("rbi meta 47", B + "/api/rbi/getRbiMetaData", {"sub_indicator_code": 47}),
-    ("rbi 47 2026", B + "/api/rbi/getRbiRecords", {"sub_indicator_code": 47, "year": "2026", "limit": 50}),
-    ("rbi 47 any", B + "/api/rbi/getRbiRecords", {"sub_indicator_code": 47, "limit": 5}),
-    ("cpi filters 2024", B + "/api/cpi/getCpiFilterByLevelAndBaseYear",
-     {"base_year": "2024", "level": "null", "series_code": "Current"}),
-    ("cpi data 2024", B + "/api/cpi/getCPIData",
-     {"base_year": "2024", "series": "Current", "year": "2026", "state_code": "99", "Format": "JSON", "limit": 20}),
-    ("cpi index 2012", B + "/api/cpi/getCPIIndex",
-     {"base_year": "2012", "series": "Current", "year": "2025", "state_code": "99", "sector_code": "3",
-      "Format": "JSON", "limit": 20}),
-    ("nas filters q22", B + "/api/nas/getNasFilterByIndicatorId",
-     {"base_year": "2022-23", "series": "Current", "frequency_code": 2, "indicator_code": 22}),
-    ("nas data q22", B + "/api/nas/getNASData",
-     {"base_year": "2022-23", "series": "Current", "frequency_code": "Quarterly", "indicator_code": 22, "limit": 20}),
-    ("fred cpi", "https://fred.stlouisfed.org/graph/fredgraph.csv", {"id": "INDCPIALLMINMEI"}),
-    ("fred fx", "https://fred.stlouisfed.org/graph/fredgraph.csv", {"id": "TRESEGINM052N"}),
+    ("rbi 47 2025", B + "/api/rbi/getRbiRecords", {"sub_indicator_code": 47, "year": "2025", "limit": 100}),
+    ("cpi24 a", B + "/api/cpi/getCPIData", {"base_year": "2024", "series": "Current", "year": "2026", "state_code": "1", "Format": "JSON", "limit": 10}),
+    ("cpi24 b", B + "/api/cpi/getCPIData", {"base_year": "2024", "series": "Current", "year": "2026", "Format": "JSON", "limit": 10}),
+    ("cpi24 c", B + "/api/cpi/getCPIData", {"base_year": "2024", "series_code": "Current", "year": "2026", "state_code": "1", "Format": "JSON", "limit": 10}),
+    ("cpi24 d", B + "/api/cpi/getCPIData", {"base_year": "2024", "year": "2026", "Format": "JSON", "limit": 10}),
+    ("cpi24 e", B + "/api/cpi/getCPIIndex", {"base_year": "2024", "series": "Current", "year": "2026", "state_code": "1", "Format": "JSON", "limit": 10}),
 ]
 
 for name, url, params in TESTS:
     status, body = get(url, params)
     print(f"### {name} -> {status} len={len(body)}")
-    print(body[-200:] if name.startswith("fred") else body[:1500])
+    print(body[:2500])
