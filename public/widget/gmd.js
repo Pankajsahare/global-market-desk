@@ -636,11 +636,11 @@
       tiles.appendChild(macroTile(name, value, sub, item.stale));
     }
     add(m.repo, 'RBI Repo Rate', fmt(m.repo.value, 2) + '%', 'Since ' + periodText(m.repo.as_of));
-    add(m.cpi, 'CPI Inflation', m.cpi && fmt(m.cpi.value, 2) + '%', m.cpi && 'Year on year · ' + periodText(m.cpi.period));
-    add(m.gdp, 'Real GDP Growth', m.gdp && fmt(m.gdp.value, 1) + '%', m.gdp && 'Year on year · ' + m.gdp.period);
+    add(m.cpi, 'CPI Inflation', m.cpi && fmt(m.cpi.value, 2) + '%', m.cpi && 'Year on year \u00b7 ' + periodText(m.cpi.period));
+    add(m.gdp, 'Real GDP Growth', m.gdp && fmt(m.gdp.value, 1) + '%', m.gdp && 'Year on year \u00b7 ' + m.gdp.period);
     add(m.forex, 'Forex Reserves', m.forex && 'US$ ' + fmt(m.forex.value, 1) + ' bn',
       m.forex && ('As on ' + periodText(m.forex.as_of) +
-        (isNum(m.forex.change_week) ? ' · ' + (m.forex.change_week >= 0 ? '+' : '−') + Math.abs(m.forex.change_week).toFixed(1) + ' bn wk' : '')));
+        (isNum(m.forex.change_week) ? ' \u00b7 ' + (m.forex.change_week >= 0 ? '+' : '\u2212') + Math.abs(m.forex.change_week).toFixed(1) + ' bn wk' : '')));
     $('gmd-macro-cpi').appendChild(lineChart(m.cpi && m.cpi.history, '%'));
     $('gmd-macro-fx').appendChild(lineChart(m.forex && m.forex.history, 'bn'));
     $('gmd-macro-note').textContent = 'Sources: RBI (repo rate, Weekly Statistical Supplement) and MoSPI (CPI base 2024, GDP base 2022-23). ' +
