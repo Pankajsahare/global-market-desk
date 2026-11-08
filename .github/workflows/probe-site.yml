@@ -1,0 +1,15 @@
+name: Probe site (temporary)
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          curl -sSL -A "Mozilla/5.0" "https://www.advisor4u.in/global-market/?nocache=$RANDOM" -D headers.txt -o page.html
+          grep -i -E "^(cache|x-|age|server|cf-)" headers.txt || true
+          grep -o -i -E "<script[^>]*(gmd|github\.io)[^>]*>|<link[^>]*(gmd|github\.io)[^>]*>|<div[^>]*gmd-root[^>]*>|gmd_dashboard|India Macro" page.html | head -20
+          grep -o -i -E "litespeed[^\"' ]{0,60}|<!-- [^>]{0,120}-->" page.html | tail -8
+          grep -c "github.io/global-market-desk" page.html || true
