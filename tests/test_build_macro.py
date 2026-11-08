@@ -88,6 +88,11 @@ class ParseWssTests(unittest.TestCase):
     def test_parse(self):
         self.assertEqual(build_macro.parse_wss(WSS_PAGE), ("2026-10-30", 717.06, -2.69))
 
+    def test_abbreviated_months(self):
+        self.assertEqual(build_macro._wss_day("Jul. 03, 2026"), "2026-07-03")
+        self.assertEqual(build_macro._wss_day("Sept. 4, 2026"), "2026-09-04")
+        self.assertEqual(build_macro._wss_day("May 29, 2026"), "2026-05-29")
+
     def test_missing_table(self):
         self.assertIsNone(build_macro.parse_wss("<html>maintenance</html>"))
 

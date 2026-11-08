@@ -66,31 +66,20 @@ def fetch_cpi(get: Fetch, today: datetime, months: int) -> dict[str, Any]:
     points: dict[str, float] = {}
     # Base 2024 series 2025 पासूनच आहे; प्रत्येक वर्ष वेगळं मागतो, नसलेलं वर्ष वगळतो
     for year in range(today.year - months // 12, today.year + 1):
-        limit, page, pages = None, 1, 1
-        while page <= pages and page <= 40:
-            body = None
-            # API मोठा limit नाकारतो (HTTP 400) — लहान limit ने पुन्हा; page 1 ला "page" param नाही
-            for size in ([limit] if limit else [100, 50, 10]):
-                params = {"base_year": "2024", "series": "Current", "year": str(year), "state_code": "1",
-                          "Format": "JSON", "limit": size}
-                if page > 1:
-                    params["page"] = str(page)
-                try:
-                    body = json.loads(get(MOSPI + "/api/cpi/getCPIData", params))
-                    limit = size
-                    break
-                except (ValueError, urllib.error.HTTPError) as exc:
-                    print(f"INFO: CPI {year} page {page} limit {size}: {type(exc).__name__}: {exc}", file=sys.stderr)
-            if body is None:
-                break  # ते वर्ष या series मध्ये नाही — पुढचं वर्ष
-            pages = int((body.get("meta_data") or {}).get("totalPages") or 1)
-            for row in body.get("data") or []:
-                if (row.get("state") == "All India" and row.get("sector") == "Combined"
-                        and row.get("division") == "CPI (General)" and row.get("month") in MONTHS):
-                    value = _num(row.get("inflation"))
-                    if value is not None:
-                        points[f"{int(row['year']):04d}-{MONTHS.index(row['month']) + 1:02d}"] = value
-            page += 1
+        # division_code 0 = CPI (General), sector_code 3 = Combined → वर्षाला जास्तीत जास्त 12 ओळी
+        try:
+            body = json.loads(get(MOSPI + "/api/cpi/getCPIData", {
+                "base_year": "2024", "series": "Current", "year": str(year), "state_code": "1",
+                "division_code": "0", "sector_code": "3", "Format": "JSON", "limit": 50}))
+        except (ValueError, urllib.error.HTTPError) as exc:
+            print(f"INFO: CPI {year}: {type(exc).__name__}: {exc}", file=sys.stderr)  # ते वर्ष series मध्ये नाही
+            continue
+        for row in body.get("data") or []:
+            if (row.get("state") == "All India" and row.get("sector") == "Combined"
+                    and row.get("division") == "CPI (General)" and row.get("month") in MONTHS):
+                value = _num(row.get("inflation"))
+                if value is not None:
+                    points[f"{int(row['year']):04d}-{MONTHS.index(row['month']) + 1:02d}"] = value
     if not points:
         raise ValueError("no CPI rows")
     history = sorted(points.items())[-months:]
@@ -122,8 +111,19 @@ def fetch_gdp(get: Fetch) -> dict[str, Any]:
 
 
 # ---------- Forex reserves ----------
-_WSS = re.compile(r"Foreign Exchange Reserves.*?As on ([A-Z][a-z]+ \d{1,2}, \d{4}).*?Total Reserves\s+"
+_WSS = re.compile(r"Foreign Exchange Reserves.*?As on ([A-Z][a-z]+\.? \d{1,2}, \d{4}).*?Total Reserves\s+"
                   r"(-?[\d,]+)\s+(-?[\d,]+)\s+(-?[\d,]+)\s+(-?[\d,]+)", re.S)
+
+
+def _wss_day(text: str) -> str | None:
+    """RBI तारीख कधी "October 30, 2026", कधी "Jul. 03, 2026" / "Sept. 4, 2026" लिहितो."""
+    clean = text.replace(".", "").replace("Sept ", "Sep ")
+    for pattern in ("%B %d, %Y", "%b %d, %Y"):
+        try:
+            return datetime.strptime(clean, pattern).date().isoformat()
+        except ValueError:
+            continue
+    return None
 
 
 def parse_wss(html: str) -> tuple[str, float, float] | None:
@@ -132,7 +132,9 @@ def parse_wss(html: str) -> tuple[str, float, float] | None:
     match = _WSS.search(text)
     if not match:
         return None
-    day = datetime.strptime(match.group(1), "%B %d, %Y").date().isoformat()
+    day = _wss_day(match.group(1))
+    if day is None:
+        return None
     usd_mn, week_usd_mn = _num(match.group(3)), _num(match.group(5))
     if usd_mn is None or week_usd_mn is None:
         return None
