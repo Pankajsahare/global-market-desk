@@ -51,4 +51,5 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python3 -c "import sys; sys.path.insert(0, 'scripts'); import notify; notify.send_telegram('Macro snapshot failed: all sources down. Site keeps the previous figures.')"
+        run: |
+          python3 -c "import sys; sys.path.insert(0, 'scripts'); import notify; notify.send_telegram('Macro snapshot failed (all sources down). Site keeps the previous figures.')"
