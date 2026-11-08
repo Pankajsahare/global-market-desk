@@ -14,6 +14,8 @@ import json
 import re
 import ssl
 import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -70,7 +72,9 @@ def fetch_cpi(get: Fetch, today: datetime, months: int) -> dict[str, Any]:
                 body = json.loads(get(MOSPI + "/api/cpi/getCPIData", {
                     "base_year": "2024", "series": "Current", "year": str(year), "state_code": "1",
                     "Format": "JSON", "limit": 1000, "page": page}))
-            except ValueError:
+            except (ValueError, urllib.error.HTTPError) as exc:
+                # ते वर्ष या series मध्ये नाही (400) — पुढचं वर्ष
+                print(f"INFO: CPI {year} page {page}: {type(exc).__name__}: {exc}", file=sys.stderr)
                 break
             pages = int((body.get("meta_data") or {}).get("totalPages") or 1)
             for row in body.get("data") or []:
@@ -133,7 +137,8 @@ def wss_dates(get: Fetch) -> list[str]:
     return re.findall(r"SelectedDate=(\d{2}/\d{2}/\d{4})", get(RBI_WSS, None))
 
 
-def fetch_forex(get: Fetch, previous: dict[str, Any], today: datetime, weeks: int) -> dict[str, Any]:
+def fetch_forex(get: Fetch, previous: dict[str, Any], today: datetime, weeks: int,
+                pause: Callable[[float], None] = time.sleep) -> dict[str, Any]:
     """नवीनतम आठवडा + जुना इतिहास; इतिहास कमी असल्यास मागचे शुक्रवार भरतो (पहिल्यांदाच)."""
     history = {d: v for d, v in (previous.get("history") or [])}
     change = previous.get("change_week")
@@ -141,13 +146,20 @@ def fetch_forex(get: Fetch, previous: dict[str, Any], today: datetime, weeks: in
     if len(history) < weeks // 2:
         # WSS दर शुक्रवारी येतो; मागचे शुक्रवार (आजपासून)
         friday = today - timedelta(days=(today.weekday() - 4) % 7)
-        targets += [(friday - timedelta(weeks=i)).strftime("%m/%d/%Y") for i in range(1, weeks + 4)]
+        # सुट्टी असल्यास WSS गुरुवारी येतो — म्हणून शुक्रवार न मिळाल्यास गुरुवार
+        targets += [[(friday - timedelta(weeks=i, days=back)).strftime("%m/%d/%Y") for back in (0, 1)]
+                    for i in range(1, weeks + 4)]
     newest = None
-    for selected in dict.fromkeys(targets):
-        try:
-            parsed = parse_wss(get(RBI_WSS, {"SelectedDate": selected}))
-        except Exception:  # noqa: BLE001 — एक आठवडा चुकला तरी बाकी चालू
-            continue
+    for target in targets:
+        parsed = None
+        for selected in ([target] if isinstance(target, str) else target):
+            try:
+                parsed = parse_wss(get(RBI_WSS, {"SelectedDate": selected}))
+            except Exception:  # noqa: BLE001 — एक आठवडा चुकला तरी बाकी चालू
+                parsed = None
+            pause(1.0)  # RBI server वर भार नको
+            if parsed:
+                break
         if parsed:
             day, total, week = parsed
             history[day] = _check("forex", total)
@@ -164,7 +176,8 @@ def fetch_forex(get: Fetch, previous: dict[str, Any], today: datetime, weeks: in
 
 
 # ---------- assemble ----------
-def build(get: Fetch, config: dict[str, Any], previous: dict[str, Any], now: datetime) -> tuple[dict[str, Any], list[str]]:
+def build(get: Fetch, config: dict[str, Any], previous: dict[str, Any], now: datetime,
+          pause: Callable[[float], None] = time.sleep) -> tuple[dict[str, Any], list[str]]:
     """नवीन snapshot + fail झालेल्या sources ची यादी."""
     repo = dict(config["repo_rate"])
     repo["value"] = _check("repo", _num(repo["value"]))
@@ -173,7 +186,7 @@ def build(get: Fetch, config: dict[str, Any], previous: dict[str, Any], now: dat
     jobs = {
         "cpi": lambda: fetch_cpi(get, now, int(config.get("cpi_months", 24))),
         "gdp": lambda: fetch_gdp(get),
-        "forex": lambda: fetch_forex(get, previous.get("forex") or {}, now, int(config.get("forex_weeks", 52))),
+        "forex": lambda: fetch_forex(get, previous.get("forex") or {}, now, int(config.get("forex_weeks", 52)), pause),
     }
     for key, job in jobs.items():
         try:

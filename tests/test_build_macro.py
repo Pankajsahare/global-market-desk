@@ -54,7 +54,7 @@ def fake_get(fail=()):
 
 class BuildTests(unittest.TestCase):
     def test_full_snapshot(self):
-        out, failed = build_macro.build(fake_get(), CONFIG, {}, NOW)
+        out, failed = build_macro.build(fake_get(), CONFIG, {}, NOW, lambda _: None)
         self.assertEqual(failed, [])
         self.assertEqual(out["repo"]["value"], 5.5)
         self.assertEqual((out["cpi"]["value"], out["cpi"]["period"]), (5.54, "2026-09"))
@@ -66,7 +66,7 @@ class BuildTests(unittest.TestCase):
 
     def test_failed_source_keeps_previous_as_stale(self):
         previous = {"gdp": {"value": 7.5, "period": "Q4 FY25-26", "history": []}}
-        out, failed = build_macro.build(fake_get(fail=("gdp",)), CONFIG, previous, NOW)
+        out, failed = build_macro.build(fake_get(fail=("gdp",)), CONFIG, previous, NOW, lambda _: None)
         self.assertEqual(failed, ["gdp"])
         self.assertTrue(out["gdp"]["stale"])
         self.assertEqual(out["gdp"]["value"], 7.5)
@@ -74,12 +74,12 @@ class BuildTests(unittest.TestCase):
     def test_out_of_range_repo_is_rejected(self):
         bad = {**CONFIG, "repo_rate": {"value": 55, "as_of": "2026-10-07"}}
         with self.assertRaises(ValueError):
-            build_macro.build(fake_get(), bad, {}, NOW)
+            build_macro.build(fake_get(), bad, {}, NOW, lambda _: None)
 
     def test_forex_keeps_history_and_adds_new_week(self):
         previous = {"history": [[f"2026-{m:02d}-01", 700.0] for m in range(1, 10)] * 1}
         previous["history"] += [[f"2025-{m:02d}-0{d}", 690.0] for m in range(1, 13) for d in (1, 8)]
-        forex = build_macro.fetch_forex(fake_get(), previous, NOW, 52)
+        forex = build_macro.fetch_forex(fake_get(), previous, NOW, 52, lambda _: None)
         self.assertEqual(forex["history"][-1], ["2026-10-30", 717.06])
         self.assertLessEqual(len(forex["history"]), 52)
 
