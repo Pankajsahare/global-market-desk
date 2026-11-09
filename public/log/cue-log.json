@@ -1,3 +1,17 @@
 {
- "entries": []
+ "entries": [
+  {
+   "date": "2026-11-09",
+   "recordedAt": "2026-11-09T16:52:14+05:30",
+   "cueScore": 0.474,
+   "cueLabel": "Mildly Positive",
+   "cueDir": "up",
+   "mood": 35,
+   "moodLabel": "Risk-Off",
+   "actualGapPct": null,
+   "actualDir": null,
+   "hit": null,
+   "status": "pending"
+  }
+ ]
 }
