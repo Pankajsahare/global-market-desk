@@ -20,7 +20,7 @@
   // पानाचा HTML ढाचा (बाहेरचा डेटा यात नाही — म्हणून innerHTML सुरक्षित)
   var MARKUP = `<div class="gmd__print-head">Global Markets Snapshot</div>
   <div class="gmd__top">
-    <h2 id="gmd-title">Global Markets</h2>
+    <h1 id="gmd-title">Global Markets</h1>
     <button type="button" class="gmd__print" id="gmd-print">Print / Save PDF</button>
   </div>
   <div class="gmd__meta" id="gmd-updated">Loading market data…</div>
