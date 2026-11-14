@@ -3,6 +3,8 @@
          background:var(--bg); color:var(--text); padding:20px; border-radius:12px; font-family:inherit; line-height:1.4; }
   .gmd *, .gmd *::before, .gmd *::after { box-sizing:border-box; }
   .gmd h2 { font-size:22px; margin:0 0 4px; color:var(--text); }
+  /* पानाचं मुख्य शीर्षक H1 (SEO) — दिसणं जुन्या H2 सारखंच; theme चा मोठा H1 style लागू नये म्हणून id ने */
+  .gmd #gmd-title { font-size:22px; line-height:1.3; font-weight:700; margin:0 0 4px; color:var(--text); letter-spacing:normal; text-transform:none; }
   .gmd h3 { font-size:16px; margin:0 0 12px; color:var(--text); }
   .gmd__meta { font-size:12px; color:var(--muted); margin-bottom:16px; }
   .gmd__banner { background:#3b2f0b; border:1px solid var(--warn); color:#fde68a; padding:8px 12px; border-radius:6px; font-size:13px; margin-bottom:16px; }
@@ -64,7 +66,7 @@
   #gmd-root { position:absolute; left:0; top:0; width:100%;
               --bg:#fff; --card:#fff; --text:#111; --muted:#555; --line:#ccc; padding:0; }
   #gmd-root [data-mode="private"], #gmd-root .gmd__cta, #gmd-root .gmd__print,
-  #gmd-root #gmd-stale, #gmd-root h2 { display:none !important; }
+  #gmd-root #gmd-stale, #gmd-root h1, #gmd-root h2 { display:none !important; }
   #gmd-root .gmd__disc[data-mode="public"], #gmd-root .gmd__card--sectors { display:block !important; }
   #gmd-root .gmd__print-head { display:block; font-size:20px; font-weight:700; margin-bottom:4px; }
   #gmd-root .gmd__print-foot { display:block; font-size:10px; color:#444; border-top:1px solid #ccc; padding-top:6px; margin-top:8px; }
