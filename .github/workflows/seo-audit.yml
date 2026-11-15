@@ -1,0 +1,36 @@
+# दर रविवारी 21:13 IST: advisor4u.in च्या sitemap मधल्या पानांची SEO तपासणी.
+# अहवाल seo-monitor/reports/ मध्ये commit होतो; summary + CSV फक्त तुमच्या private Telegram वर.
+name: SEO audit
+
+on:
+  schedule:
+    - cron: "43 15 * * 0"  # 15:43 UTC = 21:13 IST, Sunday
+  workflow_dispatch: {}     # Actions tab मधून हाताने चालवण्यासाठी
+
+permissions:
+  contents: write           # reports commit करण्यासाठी
+
+concurrency:
+  group: seo-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run audit and send summary
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python seo-monitor/seo_audit.py --send
+
+      - name: Save report
+        if: always()
+        run: bash scripts/commit_log.sh "SEO audit report" seo-monitor/reports/latest.csv seo-monitor/reports/issues.json
