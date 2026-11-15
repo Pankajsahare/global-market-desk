@@ -43,6 +43,10 @@ class AnalyseTests(unittest.TestCase):
         for code in ("redirected", "noindex_in_sitemap", "slow", "suspicious_url"):
             self.assertIn(code, issues)
 
+    def test_noindex_page_skips_on_page_checks(self):
+        html = GOOD.replace("index, follow", "noindex, follow").replace("<h1>Loans made simple</h1>", "")
+        self.assertEqual(find_issues(URL, 200, URL, 0.5, analyse_html(html)), ["noindex_in_sitemap"])
+
 
 class CompareTests(unittest.TestCase):
     def test_new_and_fixed(self):

@@ -12,7 +12,7 @@
 |---|---|
 | `http_404`, `http_500`… | पान उघडत नाही |
 | `redirected` | sitemap मधला URL दुसऱ्या पत्त्यावर जातो |
-| `noindex_in_sitemap` | पान noindex आहे पण sitemap मध्ये आहे |
+| `noindex_in_sitemap` | पान noindex आहे पण sitemap मध्ये आहे (अशा पानांचे title/alt/H1 तपासले जात नाहीत) |
 | `missing_title` / `duplicate_title_tag` / `title_too_long` | title नाही / 2 title tags / 65 पेक्षा जास्त अक्षरं |
 | `missing_description` / `duplicate_description_tag` / `description_length` | description नाही / दोनदा / 70–170 अक्षरांच्या बाहेर |
 | `missing_h1` | H1 नाही |

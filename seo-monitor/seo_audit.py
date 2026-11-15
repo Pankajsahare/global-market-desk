@@ -145,7 +145,13 @@ def find_issues(url: str, status: int, final_url: str, seconds: float, info: dic
     if norm(final_url) != norm(url):
         issues.append("redirected")
     if "noindex" in info["robots"]:
+        # noindex पान Google मध्ये दिसतच नाही — त्याचे title/alt/H1 मोजून अहवाल फुगवू नये
         issues.append("noindex_in_sitemap")
+        if seconds > SLOW_SECONDS:
+            issues.append("slow")
+        if SUSPICIOUS.search(url):
+            issues.append("suspicious_url")
+        return issues
     if info["titles"] == 0 or not info["title"]:
         issues.append("missing_title")
     elif info["titles"] > 1:
