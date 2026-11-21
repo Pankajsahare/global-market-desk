@@ -1,11 +1,12 @@
-# दर 15 मिनिटांनी (सोम–शुक्र, 05:30–03:30 IST) डेटा बनवून GitHub Pages वर publish करतो.
+# fno-command server कडून (~20 मिनिटांनी) किंवा backup cron ने (दर 2 तासांनी, सोम–शुक्र) डेटा बनवून GitHub Pages वर publish करतो.
 # टीप: GitHub चं schedule भरवशाचं नाही — fno-command server workflow_dispatch ने हा workflow स्वतः चालवू शकतो.
 name: Update market data
 
 on:
   schedule:
     # विषम मिनिटं: :00/:15/:30/:45 ला GitHub वर गर्दी असते आणि scheduled runs गाळले जातात
-    - cron: "7,22,37,52 0-21 * * 1-5"   # UTC; IST = UTC + 5:30
+    # fno-command server दर ~20 मिनिटांनी workflow_dispatch करतो; हा cron फक्त backup (दर 2 तासांनी) — Actions मिनिटं वाचतात
+    - cron: "7 0-21/2 * * 1-5"   # UTC; IST = UTC + 5:30
   workflow_dispatch: {}            # Actions tab मधून हाताने चालवण्यासाठी
   push:                            # config/script बदलल्यावर लगेच नवीन डेटा
     branches: [main]
