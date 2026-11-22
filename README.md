@@ -19,7 +19,7 @@ advisor4u.in साठी जागतिक बाजाराचा delayed �
 | `scripts/fall_alert.py` | S2: NIFTY −2/−3/−4% किंवा India VIX +15/+25% → private Telegram alert + client WhatsApp draft (`fall-alert.yml`, बाजार चालू असताना दर 30 मिनिटं) |
 | `scripts/nse_source.py` | S3: Yahoo fail झाल्यास Indian indices साठी NSE `/api/allIndices` |
 | `wordpress/recap-signup-forminator.md` | S1: Weekly recap signup form (Forminator — आधीच installed) |
-| `data-in/index_proxies.json` | S6: invest-core कडून NSE index closes (Midcap 150 / Smallcap 250 / Nifty 100); 7 दिवसांपेक्षा जुना असल्यास Yahoo |
+| `data-in/index_proxies.json` | S6: personal-investment-engine कडून NSE index closes (Midcap 150 / Smallcap 250 / Nifty 100); 7 दिवसांपेक्षा जुना असल्यास Yahoo |
 | `scripts/cue_tracker.py` | S3: सकाळचा cue vs NIFTY opening gap — `public/log/cue-log.json` |
 | `scripts/build_macro.py`, `config/macro.json` | India Macro Snapshot: CPI + GDP (MoSPI API), forex reserves (RBI WSS), repo rate (config) → `public/log/macro.json`; रोज 07:23 IST (`macro.yml`); 10Y G-Sec (RBI home), CPI chart वर repo रेषा, नवीन CPI/GDP वर Telegram draft, MPC/FD reminders, weekly recap PDF मध्ये macro पट्टी |
 | `tests/test_build_data.py` | Offline tests: `python -m unittest discover -s tests` |

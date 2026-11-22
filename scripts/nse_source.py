@@ -1,7 +1,7 @@
 """
 S3 — Indian indices साठी दुसरा source: NSE चा /api/allIndices (Yahoo fail झाल्यासच).
 
-NSE website ला browser सारखे headers आणि cookies लागतात (invest-core मधल्या पद्धतीप्रमाणे):
+NSE website ला browser सारखे headers आणि cookies लागतात (personal-investment-engine मधल्या पद्धतीप्रमाणे):
 आधी एक पान उघडून cookies घेतो, मग API. एका run मध्ये API एकदाच बोलावला जातो.
 NSE कडे daily history नाही, त्यामुळे 3M return आणि sparkline मागच्या डेटावरून (असल्यास) येतात.
 """

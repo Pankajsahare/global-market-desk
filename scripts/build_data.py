@@ -33,7 +33,7 @@ RETRIES = 2                 # पहिल्या प्रयत्नान�
 PAUSE_SECONDS = 0.4         # दोन requests मधला gap (rate-limit टाळण्यासाठी)
 SPARK_POINTS = 66           # sparkline साठी शेवटचे ~3 महिने
 MIN_SUCCESS_RATIO = 0.5     # यापेक्षा कमी यश → नवीन file लिहू नका
-INDEX_MAX_AGE_DAYS = 7      # invest-core index डेटा यापेक्षा जुना → Yahoo वापरा
+INDEX_MAX_AGE_DAYS = 7      # personal-investment-engine index डेटा यापेक्षा जुना → Yahoo वापरा
 
 # return चे नाव → किती calendar दिवस मागे
 RETURN_WINDOWS = {"r1w": 7, "r1m": 30, "r3m": 91, "r1y": 365}
@@ -102,7 +102,7 @@ def build_item(cfg: dict[str, Any], result: dict[str, Any]) -> Optional[dict[str
 
 
 def item_from_series(cfg: dict[str, Any], series: Series, market_time: Any = None) -> Optional[dict[str, Any]]:
-    """[(date, close)] series → dashboard item (Yahoo किंवा invest-core दोन्हीसाठी)."""
+    """[(date, close)] series → dashboard item (Yahoo किंवा personal-investment-engine दोन्हीसाठी)."""
     if len(series) < 2:
         return None
 
@@ -157,7 +157,7 @@ def load_previous(path: Optional[Path]) -> dict[str, dict[str, Any]]:
 
 
 def load_index_proxies(path: Optional[Path]) -> dict[str, Series]:
-    """S6: invest-core ने publish केलेले NSE index closes → {index name: [(date, close)]}."""
+    """S6: personal-investment-engine ने publish केलेले NSE index closes → {index name: [(date, close)]}."""
     if path is None or not path.is_file():
         return {}
     try:
@@ -183,7 +183,7 @@ def index_item(cfg: dict[str, Any], index_series: dict[str, Series], today: date
         return None
     item = item_from_series({**cfg, "name": cfg.get("indexName", name)}, series)
     if item is not None:
-        item["sourceSymbol"] = f"invest-core:{name}"
+        item["sourceSymbol"] = f"personal-investment-engine:{name}"
     return item
 
 
@@ -204,7 +204,7 @@ def build_dataset(
         items: list[dict[str, Any]] = []
         for cfg in entries:
             total += 1
-            # S6: invest-core चा खरा index डेटा आधी; नसल्यास/जुना असल्यास Yahoo
+            # S6: personal-investment-engine चा खरा index डेटा आधी; नसल्यास/जुना असल्यास Yahoo
             item = index_item(cfg, index_series or {}, today or datetime.now(timezone.utc).date())
             if item is not None:
                 success += 1

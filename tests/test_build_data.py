@@ -127,7 +127,7 @@ if __name__ == "__main__":
 
 
 class IndexProxyTests(unittest.TestCase):
-    """S6: invest-core index closes."""
+    """S6: personal-investment-engine index closes."""
 
     def setUp(self):
         start = date(2025, 6, 1)
@@ -144,7 +144,7 @@ class IndexProxyTests(unittest.TestCase):
         item = data["groups"]["funds"][0]
         self.assertEqual((success, calls), (1, []))
         self.assertEqual((item["name"], item["sourceSymbol"], item["category"]),
-                         ("NIFTY Midcap 150", "invest-core:Nifty Midcap 150", "Mid Cap"))
+                         ("NIFTY Midcap 150", "personal-investment-engine:Nifty Midcap 150", "Mid Cap"))
         self.assertIsNotNone(item["r1y"])
 
     def test_stale_index_falls_back_to_yahoo(self):
