@@ -138,10 +138,10 @@
    "cueDir": "down",
    "mood": 40,
    "moodLabel": "Risk-Off",
-   "actualGapPct": null,
-   "actualDir": null,
-   "hit": null,
-   "status": "pending"
+   "actualGapPct": 0.498,
+   "actualDir": "up",
+   "hit": false,
+   "status": "done"
   }
  ]
 }
