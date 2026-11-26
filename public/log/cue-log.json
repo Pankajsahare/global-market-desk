@@ -168,6 +168,19 @@
    "actualDir": "up",
    "hit": false,
    "status": "done"
+  },
+  {
+   "date": "2026-11-26",
+   "recordedAt": "2026-11-26T17:46:27+05:30",
+   "cueScore": 0.453,
+   "cueLabel": "Mildly Positive",
+   "cueDir": "up",
+   "mood": 50,
+   "moodLabel": "Neutral",
+   "actualGapPct": null,
+   "actualDir": null,
+   "hit": null,
+   "status": "pending"
   }
  ]
 }
